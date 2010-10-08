@@ -34,9 +34,9 @@
 #    -d argument as source directory (of application)
 #    -u arguement as the target base URL (like http://victim.com)
 #    -t argument as the number of threads concurrently to run (default is 10)
-#    -l argument as the language [php,asp,aspx,jsp,jspx,all] (default is all)
-#    -x argument as the extension (default regex: php4,php5,asp,aspx
-#
+#    -l argument as the language [php,asp,aspx,jsp,all] (default is all)
+#    -x argument as your desired extensions separated with | character (default : php4|php5|php6|php|asp|aspx|jsp|jspx)
+# -l jspx -x "jsp|jspx"
 #    It should work well on both Linux and Windows systems.
 #
 #    Read the related text: 
