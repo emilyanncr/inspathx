@@ -21,7 +21,7 @@
 #    authentications, file inclusion ..etc are prone
 #    to reveal possible sensitive information when
 #    those applications' URLs are directly requested.
-#	 Sometimes, it's a clue to Local File Inclusion vulnerability.
+#	 Sometimes, it's a clue to File Inclusion vulnerability.
 #    For open-source applications, source code can be downloaded and 
 #    checked to find such information. 
 #    
