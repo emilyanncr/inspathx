@@ -1,0 +1,51 @@
+Internal Path Discloser / Error Hunter
+  
+license: GPL 
+released date: 2010-09-28
+
+(c) Aung Khant, http://yehg.net               
+                                             
+YGN Ethical Hacker Group, Yangon, Myanmar
+
+Check the update via
+svn checkout http://inspathx.googlecode.com/svn/trunk/ inspathx   
+
+Send bugs, suggestions, contributions to inspath @ yehg .net
+    
+How's it useful?
+
+Web application developers sometimes fail to add safe checks against
+authentications, file inclusion ..etc are prone
+to reveal possible sensitive information when
+those applications' URLs are directly requested.
+	 Sometimes, it's a clue to Local File Inclusion vulnerability.
+For open-source applications, source code can be downloaded and 
+checked to find such information. 
+
+This script will do this job.
+First you have to download source archived file of your desired OSS.
+Second, extract it.
+Third, feed its path to inspath
+
+The inspath takes
+-d argument as source directory (of application)
+-u arguement as the target base URL (like http://victim.com)
+-t argument as the number of threads concurrently to run (default is 10)
+-l argument as the language [php,asp,aspx,jsp,jspx,all] (default is all)
+-x argument as the extension (default regex: php4,php5,asp,aspx
+
+It should work well on both Linux and Windows systems.
+
+Read the related text: 
+	 http://yehg.net/lab/pr0js/view.php/path_disclosure_vulnerability.txt
+
+Use portable bash versions if you wish:
+http://www.pentesterscripting.com/discovery/web_requester
+http://www.pentesterscripting.com/exploitation/bash_web_parameter_fuzzer
+
+
+Contribute your ideas/suggestions on various web lanaguages. 
+
+
+
+
