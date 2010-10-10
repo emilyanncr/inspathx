@@ -35,8 +35,8 @@
 #    -u arguement as the target base URL (like http://victim.com)
 #    -t argument as the number of threads concurrently to run (default is 10)
 #    -l argument as the language [php,asp,aspx,jsp,all] (default is all)
-#    -x argument as your desired extensions separated with | character (default : php4|php5|php6|php|asp|aspx|jsp|jspx)
-# -l jspx -x "jsp|jspx"
+#    -x argument as your desired extensions separated by comma(s) (default : php4,php5,php6,php,asp,aspx,jsp,jspx)
+# 
 #    It should work well on both Linux and Windows systems.
 #
 #    Read the related text: 
@@ -48,7 +48,7 @@
 #
 ################################################################################
 
-
+require 'net/http'
 require 'net/https'
 require 'uri'
 require 'thread'
@@ -68,11 +68,23 @@ def get_url(url)
     useragent = {'User-Agent'=>'inspath [path disclosure finder/error hunter - http://yehg.net]'}
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host,uri.port)
+    http.read_timeout = 180
+    http.open_timeout = 180
     http.use_ssl= true if uri.scheme == "https"
     http.verify_ssl = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
     req,body = http.get(uri.path,useragent)
     
     if /(20|50)/.match(req.code.to_s) 
+      if (body.length > 5)
+         $server_user_name = body.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
+         if body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0
+            $server_root = body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+         elsif  body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0
+            $server_root = body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+         elsif  body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0
+            $server_root = body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+         end
+      end 
       case $language
           when /(php4|php5|php6|php)/            
             if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error))/mi.match(body)
@@ -106,7 +118,9 @@ def get_url(url)
       #puts
     end	
   rescue Exception=>err
-    puts err.message
+    if err.message !~ /end of file reached/
+        puts "\n:( -> #{url}\n\ERROR:\n#{err.message}\n"
+    end
   end  
 end
 
@@ -116,12 +130,13 @@ def print_help(s,p=$0)
   puts "\nExample:\nruby #{p} -d /sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php\n"
   puts "ruby #{p} -d c:/sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php"
   puts "ruby #{p} -d c:/sources/dotnetnuke -u http://localhost/dotnetnuke -t 20 -l aspx"
+  puts "ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx"
   exit!
 end
 
 def print_banner
   puts "\n=============================================================
-Path Discloser (a.k.a inspath) / Error Hunter
+Path Discloser (a.k.a inspathx) / Error Hunter
  (c) Aung Khant, aungkhant[at]yehg.net
   YGN Ethical Hacker Group, Myanmar, http://yehg.net/
 =============================================================\n\n"
@@ -147,13 +162,13 @@ parser = OptionParser.new do|opts|
     options[:threads] = thr
   end  
   options[:language] = 'all'
-  opts.on('-l','--language php','set language [php,asp,aspx,jsp,jspx,all] (default all - means scan all)') do |thr|
-    options[:language] = thr
+  opts.on('-l','--language php','set language [php,asp,aspx,jsp,jspx,all] (default all - means scan all)') do |lan|
+    options[:language] = lan
   end  
 
-  options[:extension] = 'php4|php5|php6|php|asp|aspx|jsp|jspx'
-    opts.on('-x','--extension php','set file extensions (php4,php5,...)  default regex: php4|php5|php6|php|asp|aspx|jsp|jspx ') do |thr|
-    options[:extension] = thr
+  options[:extension] = 'php4,php5,php6,php,asp,aspx,jsp,jspx'
+    opts.on('-x','--extension php','set file extensions (php4,php5,...)  default regex: php4,php5,php6,php,asp,aspx,jsp,jspx ') do |ext|
+    options[:extension] = ext
 end  
 
 end
@@ -168,7 +183,7 @@ sourcepath = options[:dir].to_s
 targeturl = options[:url].to_s
 maxthread = options[:threads].to_i
 $language = options[:language].to_s.downcase()
-$extension = options[:extension].to_s.downcase()
+$extension = options[:extension].to_s.downcase().gsub(",","|")
 filter = /\.(#{$extension})$/i
 
 sourcepath = sourcepath.gsub(/\\/,'/') # window
@@ -181,7 +196,14 @@ end
 $logpath = targeturl.gsub(/(http|https):\/\//,'')
 $logpath = $logpath.gsub(/\//,'_')
 $logpath = $logpath.gsub(/(\:|\;|\~|\!|\@|\$|\%|\*|\^|\(|\)|\'|\"|\/|<|>|\|)/,'-')
-$logpath += '.log'
+if $logpath.length > 32 
+ $logpath = $logpath[0,32] + '__.log'
+else
+ $logpath += '.log'
+end
+
+$server_user_name = '' # extracted from strings like /home/victim/www/....
+$server_root = '' # will look like /home/victim/www/
 
 # comment if you want to append logging
 if File.exist? $logpath
@@ -233,9 +255,14 @@ select(nil,nil,nil,2)
 logcontent = IO.readlines($logpath)	
 found = logcontent.to_s.scan("[html_source]").count
 
-puts "\n\n# vulnerable url(s) = #{found}"
+puts "\n\n"
+puts "! Username detected = #{$server_user_name}" unless $server_user_name == ''
+puts "! Server path extracted = #{$server_root}" unless $server_root == ''
+puts "\n# vulnerable url(s) = #{found}"
 puts "# total requests = #{reqcount}"
 puts "# done at #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}"
+log("! Username detected = #{$server_user_name}") unless $server_user_name == ''
+log("! Server path extracted = #{$server_root}") unless $server_root == ''
 log("Vulnerable url(s) = #{found}")
 log("Total requests = #{reqcount}")
 log("Generated by inspath, path disclosure finder tool")
