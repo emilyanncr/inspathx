@@ -2,7 +2,7 @@ Internal Path Discloser / Error Hunter
   
 license: GPL 
 released date: 2010-09-28
-last update: 4:56 PM Friday, October 08, 2010
+last update: 3:18 AM Monday, October 11, 2010
 
 (c) Aung Khant, http://yehg.net               
                                              
@@ -30,7 +30,7 @@ The inspath takes
 -u arguement as the target base URL (like http://victim.com)
 -t argument as the number of threads concurrently to run (default is 10)
 -l argument as your desired language [php,asp,aspx,jsp,all] (default is all)
--x argument as your desired extensions separated with | character (default : php4|php5|php6|php|asp|aspx|jsp|jspx) - make sure to enclose multiple extensions with double quotes - See Examples
+-x argument as your desired extensions separated by comma(s) (default : php4,php5,php6,php,asp,aspx,jsp,jspx)
 
 It should work well on both Linux and Windows systems.
 
@@ -43,7 +43,7 @@ ruby inspathx.rb -d c:/sources/phpmyadmin -u http://localhost/phpmyadmin -t 20
 
 ruby inspathx.rb -d /sources/dotnetnuke -u http://localhost/dotnetnuke -t 20 -l aspx
 
-ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x "jsp|jspx"
+ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx
 
 
 Read the related text: 
