@@ -130,7 +130,7 @@ def print_help(s,p=$0)
   puts "\nExample:\nruby #{p} -d /sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php\n"
   puts "ruby #{p} -d c:/sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php"
   puts "ruby #{p} -d c:/sources/dotnetnuke -u http://localhost/dotnetnuke -t 20 -l aspx"
-  puts "ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx"
+  puts "ruby #{p} -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx"
   exit!
 end
 
