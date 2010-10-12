@@ -28,9 +28,9 @@
 #    This script will do this job.
 #    First you have to download source archived file of your desired OSS.
 #    Second, extract it.
-#    Third, feed its path to inspathx
+#    Third, feed its path to inspath
 #    
-#    The inspathx takes
+#    The inspath takes
 #    -d argument as source directory (of application)
 #    -u arguement as the target base URL (like http://victim.com)
 #    -t argument as the number of threads concurrently to run (default is 10)
@@ -65,7 +65,7 @@ end
 
 def get_url(url)
   begin
-    useragent = {'User-Agent'=>'inspath [path disclosure finder/error hunter - http://yehg.net]'}
+    useragent = {'User-Agent'=>'inspathx [path disclosure finder/error hunter - http://yehg.net]'}
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host,uri.port)
     http.read_timeout = 180
