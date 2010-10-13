@@ -71,7 +71,7 @@ def get_url(url)
     http.read_timeout = 180
     http.open_timeout = 180
     http.use_ssl= true if uri.scheme == "https"
-    http.verify_ssl = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
     req,body = http.get(uri.path,useragent)
     
     if /(20|50)/.match(req.code.to_s) 
@@ -190,6 +190,7 @@ sourcepath = sourcepath.gsub(/\\/,'/') # window
 if(targeturl[targeturl.length-1,targeturl.length]!='/')
 	targeturl = targeturl + '/'
 end
+targeturl = 'http://' + targeturl unless targeturl =~ /htt(p|ps):\/\//i
 if(sourcepath[sourcepath.length-1,sourcepath.length]!='/')
 	sourcepath =sourcepath+ '/'
 end
