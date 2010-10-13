@@ -93,7 +93,7 @@ def get_url(url)
               puts "\n#{msg}"
             end         
           when /(asp|aspx)/
-            if /(Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>)/mi.match(body)
+            if /(An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>)/mi.match(body)
               msg = "[*] #{url}"
               log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
               puts "\n#{msg}"
