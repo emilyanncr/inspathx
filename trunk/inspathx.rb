@@ -65,6 +65,7 @@ end
 
 def get_url(url)
   begin
+    
     useragent = {'User-Agent'=>'inspathx [path disclosure finder/error hunter - http://yehg.net]'}
     uri = URI.parse(url)
     uri.path += '/' if uri.path.size == 0
@@ -74,7 +75,7 @@ def get_url(url)
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
     req,body = http.get(uri.path,useragent)
-    
+    puts "-> #{url} | #{req.code.to_s}"
     if /(20|50)/.match(req.code.to_s) 
       if (body.length > 5)
          $server_user_name = body.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
@@ -189,7 +190,7 @@ filter = /\.(#{$extension})$/i
 
 sourcepath = sourcepath.gsub(/\\/,'/') # window
 
-targeturl = 'http://' + targeturl unless targeturl =~ /htt(p|ps):\/\//i
+targeturl = 'http://' + targeturl unless targeturl =~ /^htt(p|ps):\/\//i
 targeturl += '/' if URI.parse(targeturl).path.size == 0
 if(sourcepath[sourcepath.length-1,sourcepath.length]!='/')
 	sourcepath =sourcepath+ '/'
@@ -255,6 +256,9 @@ select(nil,nil,nil,2)
 
 logcontent = IO.readlines($logpath)	
 found = logcontent.to_s.scan("[html_source]").count
+
+$server_user_name = '' if found == 0
+$server_root = '' if found == 0
 
 puts "\n\n"
 puts "! Username detected = #{$server_user_name}" unless $server_user_name == ''
