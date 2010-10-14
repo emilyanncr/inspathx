@@ -50,7 +50,7 @@
 
 require 'net/http'
 require 'net/https'
-require 'uri'
+require 'open-uri'
 require 'thread'
 require 'find'
 require 'logger'
@@ -67,6 +67,7 @@ def get_url(url)
   begin
     useragent = {'User-Agent'=>'inspathx [path disclosure finder/error hunter - http://yehg.net]'}
     uri = URI.parse(url)
+    uri.path += '/' if uri.path.size == 0
     http = Net::HTTP.new(uri.host,uri.port)
     http.read_timeout = 180
     http.open_timeout = 180
@@ -187,10 +188,9 @@ $extension = options[:extension].to_s.downcase().gsub(",","|")
 filter = /\.(#{$extension})$/i
 
 sourcepath = sourcepath.gsub(/\\/,'/') # window
-if(targeturl[targeturl.length-1,targeturl.length]!='/')
-	targeturl = targeturl + '/'
-end
+
 targeturl = 'http://' + targeturl unless targeturl =~ /htt(p|ps):\/\//i
+targeturl += '/' if URI.parse(targeturl).path.size == 0
 if(sourcepath[sourcepath.length-1,sourcepath.length]!='/')
 	sourcepath =sourcepath+ '/'
 end
