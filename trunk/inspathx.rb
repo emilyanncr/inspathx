@@ -74,8 +74,13 @@ def get_url(url)
     http.open_timeout = 180
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
-    req,body = http.get(uri.path,useragent)
-    puts "-> #{url} | #{req.code.to_s}"
+    req,body = http.get(uri.path,useragent)    
+    if req.code =~ /(301|302)/
+        puts "-> #{url} | #{req.code.to_s}"
+        puts "(Redirect to : " + req.header["location"]  + ")"
+        get_url(req.header["location"])
+    end
+    
     if /(20|50)/.match(req.code.to_s) 
       if (body.length > 5)
          $server_user_name = body.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
@@ -95,7 +100,7 @@ def get_url(url)
               puts "\n#{msg}"
             end         
           when /(asp|aspx)/
-            if /(An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>)/mi.match(body)
+            if /(This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>)/mi.match(body)
               msg = "[*] #{url}"
               log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
               puts "\n#{msg}"
