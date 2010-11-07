@@ -106,7 +106,7 @@ def get_url(url)
               puts "\n#{msg}"
             end         
           when /(jsp|jspx)/
-            if /(<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run\(Thread\.java\:|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:)/mi.match(body)
+            if /(<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run\(Thread\.java\:|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:)/mi.match(body)
               msg = "[*] #{url}"
               log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
               puts "\n#{msg}"
