@@ -1,0 +1,30 @@
+
+2011-01-20
+----------------
+
+covered remaining checks (empty array, null cookie) in Full_Path_Disclosure (http://www.owasp.org/index.php/Full_Path_Disclosure) of OWASP Application Security Desk Reference (ASDR) Project (http://www.owasp.org/index.php/Category:OWASP_ASDR_Project)
+
+added support for generating path definition file and you can now use -d with path-definition file to check in addition to cms directory path
+
+fixed username extraction 
+
+added support for reading gzip/deflate compressed response from server
+
+added regexp support (use your own regexp rules to search in returned responses in addition to built-in regexp error messages)
+
+added null session cookie  support
+	--null-cookie [will auto null session for all languages ]
+	
+added custom headers  support
+	--headers "cookie: sid[%00]=1\r\nX-pingback:: %00"
+	
+added data (GET/POST)  support
+	--data (var=1&var=2)
+	
+added method (get by default)  support
+	--method post
+	
+added follow redirect support
+	--follow-redirect
+	
+added cold fusion language support; when feeded by large inputs, cold fusion tend to reveal source code disclosure when used as IIS ISAPI extensions
