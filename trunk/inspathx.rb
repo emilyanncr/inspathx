@@ -1,10 +1,12 @@
 #!/usr/bin/env ruby
 
 ################################################################################
-#    Internal Path Discloser / Error Hunter
+#    Full Path Discloser / Error Hunter
 #  
 #    license: GPL 
 #    released date: 2010-09-28
+#     
+#    last updated: 2011-01-26
 #
 #    (c) Aung Khant, http://yehg.net               
 #                                                 
@@ -13,7 +15,7 @@
 #    Check the update via
 #    svn checkout http://inspathx.googlecode.com/svn/trunk/ inspathx   
 #
-#    Send bugs, suggestions, contributions to inspath @ yehg .net
+#    Send bugs, suggestions, contributions to inspathx @ yehg .net
 #        
 #    How's it useful?
 #    
@@ -21,7 +23,7 @@
 #    authentications, file inclusion ..etc are prone
 #    to reveal possible sensitive information when
 #    those applications' URLs are directly requested.
-#	 Sometimes, it's a clue to File Inclusion vulnerability.
+#    Sometimes, it's a clue to File Inclusion vulnerability.
 #    For open-source applications, source code can be downloaded and 
 #    checked to find such information. 
 #    
@@ -31,16 +33,28 @@
 #    Third, feed its path to inspath
 #    
 #    The inspath takes
-#    -d argument as source directory (of application)
-#    -u arguement as the target base URL (like http://victim.com)
-#    -t argument as the number of threads concurrently to run (default is 10)
-#    -l argument as the language [php,asp,aspx,jsp,all] (default is all)
-#    -x argument as your desired extensions separated by comma(s) (default : php4,php5,php6,php,asp,aspx,jsp,jspx)
-# 
-#    It should work well on both Linux and Windows systems.
+#    Required:
+#
+#    -d with source directory (of application like /src/webapp/phpmyadmin)
+#    -u with the target base URL (like http://localhost) Avoid specifying file name like http://localhost/index.php
+#
+#    Optional:
+#    -t with the number of threads concurrently to run (default is 10)
+#    -l with the language [one of php,asp,aspx,jsp,cfm,all] (default is all)
+#    -x with your desired extensions separated by comma(s) (default : php4,php5,php6,php,asp,aspx,jsp,jspx,cfm)
+#    -m/--method with http method (either get or post)
+#    -q/--data with http data ("a=1&b=2")	
+#    -h/--headers with http headers (format: "x-ping-back: %00\r\ncookie: %00)
+#    -p/--param-array flag that makes inpathx identify parameters (a=1&b=2) in target url and submit with arrayified parameters (a[]=1&b[]=2)
+#    -n/--null-cookie flag to send session cookies with null value
+#    -f/--follow flag to indicate whether you want inpathx to follow http redirection
+#    
+#    -p, -n, -f don't need any value specified. They do their stuffs when you specify -n, -p, -f
+#
+#    Check out EXAMPLES for more options and usage 
 #
 #    Read the related text: 
-#	 http://yehg.net/lab/pr0js/view.php/path_disclosure_vulnerability.txt
+#    http://yehg.net/lab/pr0js/view.php/path_disclosure_vulnerability.txt
 #
 #    Use portable bash versions if you wish:
 #    http://www.pentesterscripting.com/discovery/web_requester
@@ -55,6 +69,12 @@ require 'thread'
 require 'find'
 require 'logger'
 require 'optparse'
+require 'erb'
+require 'fileutils'
+
+# change it if you want it
+$useragent = {'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0b8) Gecko/20100101 Firefox/4.0'}
+
 
 def log(s)
   logger = Logger.new($logpath)  
@@ -63,10 +83,59 @@ def log(s)
   logger.close
 end
 
-def get_url(url)
-  begin
+
+def logpath(s)
+  file  = $logpath + '-path_vuln.txt'
+  logger = Logger.new(file)  
+  logger.datetime_format = ""
+  logger.info(s)
+  logger.close
+end
+
+
+def path_check(s)
+  p = ''
+  if s.class.to_s == 'Array' and s.length == 1 
+    p = s[0]
+  else 
+    p = s    
+  end
+  if p == ''
+    return false
+  elsif p.include?'www.w3.org/TR/' or p.include?'my.netscape.com'
+    return false
+  else
+    return true
+  end
+end
+
+def correct_path(p,u)
+    if u != '' and p.class.to_s == 'Array'
+        ps = p[0].to_s.scan(/(\/home\/#{u}\/([0-9a-zA-Z\.\_\-\+]+)\/)/)[0]
+        if ps.class.to_s == 'Array'
+            return ps[0]
+        end
+    end
+    return p
+end
+
+def user_check(s)
+  u = ''
+  if u.class.to_s == 'Array' and u.length == 1 
+    u = s[0]
+  else 
+    u = s    
+  end
+  if u == ''
+    return false
+  else
+    return true
+  end
+end
+
+def get_cookie(url,data='',headers={},follow_redirect=false)
     
-    useragent = {'User-Agent'=>'inspathx [path disclosure finder/error hunter - http://yehg.net]'}
+    cookies = []
     uri = URI.parse(url)
     uri.path += '/' if uri.path.size == 0
     http = Net::HTTP.new(uri.host,uri.port)
@@ -74,51 +143,215 @@ def get_url(url)
     http.open_timeout = 180
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
-    req,body = http.get(uri.path,useragent)    
-    if req.code =~ /(301|302)/
-        puts "-> #{url} | #{req.code.to_s}"
-        puts "(Redirect to : " + req.header["location"]  + ")"
-        get_url(req.header["location"])
+    
+    if data != ''
+        req,body = http.get(uri.path+'?'+data,headers)    
+    else
+        req,body = http.get(uri.path,headers)    
+    end   
+    
+    if /(20|30)/.match(req.code.to_s) 
+        unless req.header["set-cookie"] == nil
+            req.get_fields('Set-Cookie').each  do |v|
+                c1 = v.split(';')
+                c1.each do|v|
+                    unless v =~ /(domain|expires|httpOnly|path)/
+                        cookies << v.split('=')[0]
+                    end
+                end
+            end            
+        end 
+    end
+    cookies.compact!
+    cookies.uniq!
+    return cookies
+end
+
+def prepare_cookies(sa)
+    cookies = ''    
+    if sa.class.to_s == 'Array'
+        sa.map!{ |s| s + '='}
+        sa.each do |v|
+            cookies = cookies + v + '; '
+        end
+    end    
+    return cookies
+end
+
+def get_params(url,data,headers)
+    params = []
+    links = []
+    uri = URI.parse(url)
+    uri.path += '/' if uri.path.size == 0
+    http = Net::HTTP.new(uri.host,uri.port)
+    http.read_timeout = 180
+    http.open_timeout = 180
+    http.use_ssl= true if uri.scheme == "https"
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
+
+    if data != ''
+        req,body = http.get(uri.path+'?'+data,headers)    
+    else
+        req,body = http.get(uri.path,headers)    
+    end   
+
+    target = uri.scheme + '://' + uri.host
+
+    body.scan(/href="(.*?)"/){
+        link = $1        
+        if link =~ /^(\/|[a-z]|\?)/ or link =~ /^#{target}/        
+            if link =~ /(\?|\=)/ and link !~ /^java/         
+                links << link
+            end
+        end    
+    }
+    body.scan(/href='(.*?)'/){
+        link = $1        
+        if link =~ /^(\/|[a-z]|\?)/ or link =~ /^#{target}/        
+            if link =~ /(\?|\=)/ and link !~ /^java/
+                links << link
+            end
+        end    
+    }
+    
+    if links.length > 0
+        links.each do|l|            
+            c = []
+            d = []
+            a = l.split('?')
+            a.each do |b|                                
+                if b.include?'='
+                    if b =~ /(&amp;[a-zA-Z]+=)/
+                        c = b.split('&amp;')                        
+                        c.each do |d|                           
+                           params << d.split('=')[0] 
+                        end
+                    elsif b.include?'&'
+                        c = b.split('&')
+                        c.each do |d|
+                           params << d.split('=')[0] 
+                        end
+                    else
+                        params << b.split('=')[0] 
+                    end
+                end
+            end
+        end
+    end
+    params.uniq!
+    params.compact!
+    str = ''
+    if params.class.to_s == 'Array'
+        params.map!{ |s| s + '[]='}
+        params.each do |v|
+            str = str + v + '&'
+        end
+    end   
+    
+    return str
+end
+
+def decompress(string, type='deflate')
+  require 'zlib'
+  require 'stringio'
+  buf = ''
+  if type == 'deflate'
+    zstream = Zlib::Inflate.new
+    buf = zstream.inflate(string)
+    zstream.finish
+    zstream.close
+  elsif type == 'gzip'
+    tmp = Zlib::GzipReader.new(StringIO.new(string))
+    buf = tmp.read
+  end
+  buf
+end
+
+def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')   
+  begin    
+    
+    uri = URI.parse(url)
+    uri.path += '/' if uri.path.size == 0
+    http = Net::HTTP.new(uri.host,uri.port)
+    http.read_timeout = 180
+    http.open_timeout = 180
+    http.use_ssl= true if uri.scheme == "https"
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
+    
+    isvuln = false
+    if method == 'get'
+        if data != ''
+            req,body = http.get(uri.path+'?'+data,headers)    
+        else
+            req,body = http.get(uri.path,headers)    
+        end
+    else
+        req,body = http.post2(uri.path,data,headers)    
+    end
+    if req.code =~ /(301|302)/        
+        if follow_redirect == true
+            puts "-> #{url} | #{req.code.to_s}\n(Redirected to : " + req.header["location"]  + ")\n\n"
+            get_url(req.header["location"])
+        end
     end
     
+    
+    if req['Content-Encoding'] =~ /gzip|deflate/
+        body = decompress(body,req['Content-Encoding'])
+    end
+   
+    
     if /(20|50)/.match(req.code.to_s) 
-      if (body.length > 5)
-         $server_user_name = body.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
-         if body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0
-            $server_root = body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
-         elsif  body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0
-            $server_root = body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
-         elsif  body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0
-            $server_root = body.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
-         end
-      end 
+      if body.length < 5 or uri.path =~ /index\.([a-z]{2,4})%$/        
+        return 
+      end
+      
+
+    
+      if regexp != ''
+        if /(#{regexp})/mi.match(body)
+          is_vuln = true
+        end  
+      end
+    
       case $language
           when /(php4|php5|php6|php)/            
-            if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error))/mi.match(body)
-              msg = "[*] #{url}"
-              log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
-              puts "\n#{msg}"
+            if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:)/mi.match(body)
+              is_vuln = true
             end         
           when /(asp|aspx)/
             if /(This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>)/mi.match(body)
-              msg = "[*] #{url}"
-              log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
-              puts "\n#{msg}"
+              is_vuln = true
             end         
           when /(jsp|jspx)/
-            if /(<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run\(Thread\.java\:|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:)/mi.match(body)
-              msg = "[*] #{url}"
-              log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
-              puts "\n#{msg}"
-            end          
-          else            
-            if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run\(Thread\.java\:|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:)/mi.match(body)
-              msg = "[*] #{url}"
-              log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
-              puts "\n#{msg}"
+            if /(<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:)/mi.match(body)
+              is_vuln = true
+            end  
+          when /(cfm)/
+            if /(<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
+                is_vuln = true
+            end 
+                    
+      else            
+            if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
+                is_vuln = true
             end              
       end
-   
+      if is_vuln == true
+          msg = "[*] #{url}"
+          log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
+          
+          if $pathval == true
+            purl = url
+            purl = purl.gsub($target,'')
+            msg = "/#{purl}"
+            print "\n#{msg}"        
+                     
+          else            
+            puts "\n#{msg}"  
+          end
+          logpath("#{msg}")  
+      end 
     elsif req.code == "404"
       #uncomment if you want
       #puts "[!404] #{url} - wrong path or file was removed?"
@@ -126,18 +359,24 @@ def get_url(url)
     end	
   rescue Exception=>err
     if err.message !~ /end of file reached/
-        puts "\n:( -> #{url}\n\ERROR:\n#{err.message}\n"
+        if err.message =~ /execution expired/
+            puts "\n:( -> #{url} - ERROR: the server does not respond fast enough\ntry again later for more accurate result."
+        else
+            puts "\n:( -> #{url}\n\ERROR:\n#{err.message}\n"
+        end
     end
   end  
 end
 
+
 def print_help(s,p=$0)
   print_banner
   puts s  
-  puts "\nExample:\nruby #{p} -d /sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php\n"
+  puts "\nExample:\nruby #{p} -d /sources/phpmyadmin -u http://localhost/phpmyadmin\n"
   puts "ruby #{p} -d c:/sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php"
-  puts "ruby #{p} -d c:/sources/dotnetnuke -u http://localhost/dotnetnuke -t 20 -l aspx"
-  puts "ruby #{p} -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx"
+  puts "ruby #{p} -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx -n"
+  puts "ruby #{p} -d /sources/wordpress -g paths/wordpress-3.0.4"
+  puts "ruby #{p} -d paths/wordpress-3.0.4 -u http://localhost/wp"
   exit!
 end
 
@@ -146,143 +385,430 @@ def print_banner
 Path Discloser (a.k.a inspathx) / Error Hunter
  (c) Aung Khant, aungkhant[at]yehg.net
   YGN Ethical Hacker Group, Myanmar, http://yehg.net/
+
+svn co http://inspathx.googlecode.com/svn/trunk/ inspathx
 =============================================================\n\n"
 end
 
+def error_msg(s)
+    print_banner
+    puts 'ERROR:'
+    puts 
+    puts '[X] ' + s
+    exit!
+end    
+
+def parse_header(s)
+    if s == ''
+        return {}
+    else
+        unless s.to_s.include?':'
+            error_msg('Invalid Header Format. Colon(:) must be included. (i.e \'Cookie: userid=%00)')
+        end
+        h0 = {}
+        h1 = s.split('\r\n')
+        h1.each do |v|
+            h0[v.split(':')[0]] = v.split(':')[1]
+        end 
+        return h0
+    end
+end
+
+def parse_data(s)
+    if s == ''
+        return ''
+    else
+        unless s.to_s.include?'='
+            error_msg('Invalid get/post Data Format. Equal (=) must be included. (i.e "<script>=xss&a=1+or+1=1")')
+        end
+        h0 = {}
+        h2 = {}
+        h1 = s.split('&')
+        r = ''        
+        h1.each do |v|
+            h0[v.split('=')[0]] = v.split('=')[1]
+        end 
+        h0.each do |k,v|
+            h2[k] = ERB::Util.url_encode(v.to_s)
+        end        
+        h2.each do |k,v|
+            r = r + k + '=' + v + '&'
+        end      
+        return r    
+    end
+end
+
+def ar2s(ar)
+    r = ''
+    if ar.class.to_s == 'Array'
+        ar.each do |v|
+          r = r + v + ','  
+        end
+        if r.length >= 2
+         r = r[0..(r.length-2)] if r[r.length-1] == ','
+        end
+    end
+    return r
+end
+
+
 def main
 
-begin
-  
-options = {}  
+    begin
 
-parser = OptionParser.new do|opts|
-  options[:dir] =  nil
-  opts.on('-d','--dir /source/app','set source code directory of application') do |dir|    
-    options[:dir] = dir
-  end
-  options[:url] = nil
-  opts.on('-u','--url http://site.com','set url') do |url|
-    options[:url] = url
-  end
-  options[:threads] = 10
-  opts.on('-t','--threads 20','set thread number(default 10)') do |thr|
-    options[:threads] = thr
-  end  
-  options[:language] = 'all'
-  opts.on('-l','--language php','set language [php,asp,aspx,jsp,jspx,all] (default all - means scan all)') do |lan|
-    options[:language] = lan
-  end  
+        mutex  = Mutex.new
+        options = {}  
 
-  options[:extension] = 'php4,php5,php6,php,asp,aspx,jsp,jspx'
-    opts.on('-x','--extension php','set file extensions (php4,php5,...)  default regex: php4,php5,php6,php,asp,aspx,jsp,jspx ') do |ext|
-    options[:extension] = ext
-end  
+        parser = OptionParser.new do|opts|
 
-end
+            options[:dir] =  nil
+            opts.on('-d','--dir /source/app','set source code directory/source path definition file of application [Required]')   do |dir|    
+                options[:dir] = dir
+            end
 
-parser.parse!
+            options[:url] = nil
+            opts.on('-u','--url http://site.com/','set url [Required if -g option is not specified]') do |url|
+                options[:url] = url
+            end
 
-print_help(parser.to_s) if options[:dir] == nil
-print_help(parser.to_s) if options[:url] == nil 
+            options[:threads] = 10
+            opts.on('-t','--threads 10','set thread number(default: 10)') do |thr|
+                options[:threads] = thr
+            end  
 
+            options[:language] = 'all'
+            opts.on('-l','--language php','set language [php,asp,aspx,jsp,jspx,cfm,all] (default all - means scan all)') do |lan|
+                options[:language] = lan
+            end  
 
-sourcepath = options[:dir].to_s
-targeturl = options[:url].to_s
-maxthread = options[:threads].to_i
-$language = options[:language].to_s.downcase()
-$extension = options[:extension].to_s.downcase().gsub(",","|")
-filter = /\.(#{$extension})$/i
+            options[:extension] = 'php4,php5,php6,php,asp,aspx,jsp,jspx,cfm'
+            opts.on('-x','--extension php','set file extensions (php4,php5,...)  default regex: php4,php5,php6,php,asp,aspx,jsp,jspx,cfm') do |ext|
+                options[:extension] = ext
+            end
 
-sourcepath = sourcepath.gsub(/\\/,'/') # window
+            options[:method] = 'get'
+            opts.on('-m','--method TYPE','http method get/post (default: get)') do |m|
+                options[:method] = m
+            end  
 
-targeturl = 'http://' + targeturl unless targeturl =~ /^htt(p|ps):\/\//i
-targeturl += '/' if URI.parse(targeturl).path.size == 0
-if(sourcepath[sourcepath.length-1,sourcepath.length]!='/')
-	sourcepath =sourcepath+ '/'
-end
-$logpath = targeturl.gsub(/(http|https):\/\//,'')
-$logpath = $logpath.gsub(/\//,'_')
-$logpath = $logpath.gsub(/(\:|\;|\~|\!|\@|\$|\%|\*|\^|\(|\)|\'|\"|\/|<|>|\|)/,'-')
-if $logpath.length > 32 
- $logpath = $logpath[0,32] + '__.log'
-else
- $logpath += '.log'
-end
+            options[:headers] = ''
+            opts.on('-h','--headers HEADERS','add http header (eg. "cookie: sid[%00]=1\r\nX-pingback:: %00"') do |h|
+                options[:headers] = h
+            end  
 
-$server_user_name = '' # extracted from strings like /home/victim/www/....
-$server_root = '' # will look like /home/victim/www/
+            options[:data] = ''
+            opts.on('-q','--data DATA','http get/post data (e.g "a=<script>&b=../../../")') do |da|
+                options[:data] = da
+            end  
 
-# comment if you want to append logging
-if File.exist? $logpath
-  File.delete $logpath
-end
-  
-scans  = []
-count = 0
-reqcount = 0
-#################################################################
+            options[:null_cookie] = false
+            opts.on('-n','--null-cookie','add null session cookie (no need to specify cookie name).') do |c|
+                options[:null_cookie] = true
+            end 
 
-print_banner()
-puts "\n# searching in #{targeturl} at #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}...\n# log file saved as #{$logpath}\n# total threads: #{maxthread}\n\n"    
-      
-log("TargetURL: #{targeturl}")
-log("Date:  #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n")
+            options[:follow_redirect] = false
+            opts.on('-f','--follow','follow http redirection') do |f|
+                options[:follow_redirect] = true
+            end  
+              
+            options[:param_array] = false
+            opts.on('-p','--param-array','identify parameters in target url,make \'em array & request (--data value untouched')  do |pa|
+                options[:param_array] = true
+            end  
 
-Thread.abort_on_exception = true
+            options[:regexp] = ''
+            opts.on('-r','--regexp REGEXP','specify your own regexp to search in returned responses (eg: "require\(([a-zA-Z.\/\.-]+)\)") [will combine with built-in regexp] ') do |re|
+                options[:regexp] = re
+            end  
 
-Find.find(sourcepath) do |f|
-  type = case
-          when File.file?(f) then
-             if filter.match(f)          
-                
-                f = f.gsub(sourcepath,targeturl)      
-                scans[count] = Thread.new{
-                  begin
-                    get_url(f)                              
-                  rescue Exception=>err
-                    puts err.message
-                  end
-                }
-                count=count+1
-                reqcount=reqcount+1 
-                if (count != 0 && (count%maxthread) == 0)
-                    scans.each {|t|t.join;}
-                    scans = []
-                    count = 0
+            options[:gen] =  nil
+            opts.on('-g','--gen FILE','read source directory (-d) & generate file list so next time you can feed this file path in -d option instead of source directory.')   do |ge|    
+                options[:gen] = ge
+            end
+
+            options[:comment] = ''
+            opts.on('-c','--comment STRING','comment for path definition file to be used with -g and -d options. date is automatically appended.')   do |co|    
+            options[:comment] = co
+            end
+
+            options[:pval] = false
+            opts.on('-x','--x-p','show only paths in console. This does not contain target url portion')  do |xv|
+                options[:pval] = true
+            end  
+
+        end
+
+        parser.parse!
+
+        print_help(parser.to_s) if options[:dir] == nil
+        sourcepath = options[:dir].to_s
+        $extension = options[:extension].to_s.downcase().gsub(",","|")
+        filter = /\.(#{$extension})$/i
+
+        if options[:gen] != nil
+            error_msg ('-d/--dir option is neccessary when you specify -g/--gen option') if sourcepath == ''
+            fgen = options[:gen].to_s
+            if  File.directory?sourcepath
+                begin
+                    flist = File.new(fgen,"w")
+                rescue Exception=>err
+                    error_msg(err.message)
                 end
-             end
-         else "?"
-         end  
+                print_banner()
+                puts
+                
+                comment = options[:comment]
+                puts
+                fcount = 0
+                flist.puts('# ' + comment)
+                flist.puts("# Date: #{Time.now.strftime("%Y-%m-%d %H:%M:%S")}\n\n")
+                Find.find(sourcepath) do |fi|
+                  type = case
+                          when File.file?(fi) then
+                             if filter.match(fi)  
+                                flist.puts(fi.gsub(sourcepath,'') )
+                                fcount += 1
+                             end
+                         else "?"
+                         end  
+                end
+                puts "\nSuccessfully saved as #{fgen} with #{fcount} file paths.\nNext time, feed its path in -d option.\n\nSend bugs, suggestions, contributions to inspathx[at]yehg.net"
+                flist.close
+                puts 'Removing directory ' + sourcepath + ' ...'
+                puts 'Done!'
+                FileUtils.rm_rf(sourcepath)
+                exit!
+            else
+                error_msg ('source directory (-d) does not exist.')
+            end
+            
+        end
+
+        print_help(parser.to_s) if options[:url] == nil 
+
+
+
+        targeturl = options[:url].to_s
+
+        targeturl = 'http://' + targeturl unless targeturl =~ /^htt(p|ps):\/\//i
+        targeturl += '/' if URI.parse(targeturl).path.size == 0
+        targeturl += '/' unless targeturl[targeturl.length-1] == '/'
+        $target = targeturl
+        maxthread = options[:threads].to_i
+        $language = options[:language].to_s.downcase()
+
+
+        sourcepath = sourcepath.gsub(/\\/,'/') # window
+
+        if File.directory?sourcepath
+            if sourcepath[sourcepath.length-1,sourcepath.length]!='/'
+                sourcepath =sourcepath+ '/'
+            end
+        end    
+
+        $logpath = targeturl.gsub(/(http|https):\/\//,'')
+        $logpath = $logpath.gsub(/\//,'_')
+        $logpath = $logpath.gsub(/(\:|\;|\~|\!|\@|\$|\%|\*|\^|\(|\)|\'|\"|\/|<|>|\|)/,'-')
+        if $logpath.length > 32 
+         $logpath = $logpath[0,32] + '__.log'
+        else
+         $logpath += '.log'
+        end
+
+        server_user_name = '' # extracted from strings like /home/victim/www/....
+        server_root = '' # will look like /home/victim/www/
+
+        method = options[:method].to_s
+        data = parse_data(options[:data].to_s)
+        headers = parse_header(options[:headers].to_s)
+        headers = headers.merge($useragent)
+
+        if options[:param_array] == true  
+            if data == ''
+                data = get_params(targeturl,data,headers)
+            else
+                data = data +  get_params(targeturl,data,headers)
+            end
+        end
+
+
+        if options[:param_array] == true  && options[:method] == 'post'
+            if data == '' && options[:method] == 'post'
+                error_msg('--data must be specified when the http method is \'post\' and --param-array returns empty')
+            end    
+        elif  options[:method] == 'post'
+            if data == '' 
+                error_msg('--data must be specified when the http method is \'post\'')
+            end 
+        end
+
+        follow_redirect = options[:follow_redirect]
+        null_cookie = options[:null_cookie]
+        regexp = options[:regexp]
+
+        $pathval = options[:pval]
+
+
+        # comment if you want to append logging
+        if File.exist? $logpath
+          File.delete $logpath
+        end
+          
+
+        #################################################################
+
+        print_banner()
+
+        puts "\n# target: #{targeturl}\n# source: #{sourcepath}\n# log file: #{$logpath}\n# follow redirect: #{follow_redirect}\n# null cookie: #{null_cookie}\n# total threads: #{maxthread}\n# time: #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n"    
+
+         
+        log("TargetURL: #{targeturl}")
+        log("Source: #{sourcepath}")
+        log("Settings: follow redirect: #{follow_redirect},null cookie: #{null_cookie}, total threads: #{maxthread}")
+        log("Date:  #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n")
+
+
+        if null_cookie == true
+            puts '# identifying cookies to poison ...'
+            url_cookies = get_cookie(targeturl, data, headers, follow_redirect )
+            url_cookies << 'ASP.NET_SessionId' if $language =~ /(aspx)/
+            url_cookies << 'ASPSESSIONID'  if $language =~ /(asp)/
+            url_cookies << 'JSESSIONID'  if $language =~ /(jsp)/
+            url_cookies << 'JSESSION_ALTERNATE'  if $language =~ /(jsp)/
+            url_cookies << 'CFID'   if $language =~ /(cfm)/
+            url_cookies << 'CFTOKEN'  if $language =~ /(cfm)/
+            url_cookies << 'CFGLOBALS' if $language =~ /(cfm)/
+            url_cookies << 'PHPSESSID'  if $language =~ /(php)/
+            url_cookies.compact!
+            url_cookies.uniq!
+            puts '# got cookie(s): ' + ar2s(url_cookies) 
+            puts 
+            ncookies = {'Cookie'=>prepare_cookies(url_cookies)}
+            headers = headers.merge(ncookies)
+        end 
+
+
+        Thread.abort_on_exception = true
+
+        scans  = []
+        count = 0
+        reqcount = 0
+
+
+        if File.exists?sourcepath
+            if File.directory?sourcepath
+                Find.find(sourcepath) do |f|
+                  type = case
+                          when File.file?(f) then
+                             if filter.match(f)  
+                                f = f.gsub(sourcepath,targeturl) 
+                                scans[count] = Thread.new{
+                                  mutex.synchronize do
+                                    get_url(f,method,data,headers,null_cookie,follow_redirect,regexp,pathval)                              
+                                  end
+                                }
+                                count=count+1
+                                reqcount=reqcount+1 
+                                if (count != 0 && (count%maxthread) == 0)
+                                    scans.each {|t|t.join;}
+                                    scans = []
+                                    count = 0
+                                end
+                             end
+                         else "?"
+                         end  
+                end
+            else
+                
+                sf = File.new(sourcepath,"r")
+                furl = []
+                while fline = sf.gets
+                    fu = ''
+                    if fline.length > 1 and fline !~ /^#/ and filter.match(fline) 
+                        target  = targeturl[0..(targeturl.length-2)] if fline.to_s =~ /^\//
+                        fu = target  + fline.to_s
+                        fu.gsub!("\n","")
+                        fu.gsub!("\r\n","")
+                        furl << fu
+                    end
+                end
+                sf.close
+                if furl.length > 0
+                    furl.each do |fl|
+                        scans[count] = Thread.new{
+                          mutex.synchronize do
+                            get_url(fl,method,data,headers,null_cookie,follow_redirect,regexp)                              
+                          end
+                        }
+                        count=count+1
+                        reqcount=reqcount+1 
+                        if (count != 0 && (count%maxthread) == 0)
+                            scans.each {|t|t.join;}
+                            scans = []
+                            count = 0
+                        end   
+                    end
+                end
+                
+            end
+        else
+            error_msg('-d source path directory/file does not exist. It can be either a path definition file or a source directory.')
+        end
+
+
+        puts "\n# waiting for child threads to finish .."
+        scans.each {|t|t.join;print  "."}
+
+        select(nil,nil,nil,2)
+
+        logcontent = IO.readlines($logpath)	
+        found = logcontent.to_s.scan("[html_source]").count
+
+        if found > 0
+
+           bs = logcontent.to_s.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
+           if server_user_name == '' || server_user_name.class.to_s == 'NilClass'
+              if bs.class.to_s == 'Array'
+                  server_user_name = bs[0].to_s
+              end
+           end
+           
+           if logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0 && server_root != ''
+              server_root = logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+           end
+
+
+        end
+        server_user_name = '' if found == 0
+        server_root = '' if found == 0
+
+        puts "\n\n"
+        puts 
+
+        puts "! Username detected = #{server_user_name}" if user_check(server_user_name)
+        if (path_check(server_root))
+            server_root = correct_path(server_root,server_user_name)
+            puts "! Server path extracted = #{server_root}"
+        end    
+
+        puts "\n# vulnerable url(s) = #{found}"
+        puts "# total requests = #{reqcount}"
+        puts "# done at #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}"
+        puts "\nSend bugs, suggestions, contributions to inspathx[at]yehg.net"
+        log("! Username detected = #{server_user_name}")  if user_check(server_user_name)
+        log("! Server path extracted = #{server_root}") if (path_check(server_root))
+        log("Vulnerable url(s) = #{found}")
+        log("Total requests = #{reqcount}")
+        log("Generated by inspathx, path disclosure finder tool")
+        log("by Aung Khant, http://yehg.net/lab\n\n")
+        log("\nSend bugs, suggestions, contributions to inspathx[at]yehg.net")
+        puts "\a"
+    rescue Exception=>err
+        puts err.message
+    end
+
 end
-puts "\n# waiting for child threads to finish .."
-scans.each {|t|t.join;print  "."}
 
-select(nil,nil,nil,2)
-
-logcontent = IO.readlines($logpath)	
-found = logcontent.to_s.scan("[html_source]").count
-
-$server_user_name = '' if found == 0
-$server_root = '' if found == 0
-
-puts "\n\n"
-puts "! Username detected = #{$server_user_name}" unless $server_user_name == ''
-puts "! Server path extracted = #{$server_root}" unless $server_root == ''
-puts "\n# vulnerable url(s) = #{found}"
-puts "# total requests = #{reqcount}"
-puts "# done at #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}"
-log("! Username detected = #{$server_user_name}") unless $server_user_name == ''
-log("! Server path extracted = #{$server_root}") unless $server_root == ''
-log("Vulnerable url(s) = #{found}")
-log("Total requests = #{reqcount}")
-log("Generated by inspath, path disclosure finder tool")
-log("by Aung Khant, http://yehg.net/lab\n\n")
-
-rescue Exception=>err
-  puts err.message
-end
-
-end
 
 if __FILE__ == $0
   main()
