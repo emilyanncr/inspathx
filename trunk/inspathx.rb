@@ -532,7 +532,7 @@ def main
             end
 
             options[:pval] = false
-            opts.on('-x','--x-p','show only paths in console. This does not contain target url portion')  do |xv|
+            opts.on('-x','--x-p','show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.')  do |xv|
                 options[:pval] = true
             end  
 
