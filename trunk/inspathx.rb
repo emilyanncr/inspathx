@@ -546,7 +546,7 @@ def main
         filter = /\.(#{$extension})$/i
 
         if options[:gen] != nil
-            error_msg ('-d/--dir option is neccessary when you specify -g/--gen option') if sourcepath == ''
+            error_msg('-d/--dir option is neccessary when you specify -g/--gen option') if sourcepath == ''
             fgen = options[:gen].to_s
             if  File.directory?sourcepath
                 begin
@@ -579,7 +579,7 @@ def main
                 FileUtils.rm_rf(sourcepath)
                 exit!
             else
-                error_msg ('source directory (-d) does not exist.')
+               error_msg('source directory (-d) does not exist.')
             end
             
         end
@@ -704,7 +704,7 @@ def main
                                 f = f.gsub(sourcepath,targeturl) 
                                 scans[count] = Thread.new{
                                   mutex.synchronize do
-                                    get_url(f,method,data,headers,null_cookie,follow_redirect,regexp,pathval)                              
+                                    get_url(f,method,data,headers,null_cookie,follow_redirect,regexp)                              
                                   end
                                 }
                                 count=count+1
