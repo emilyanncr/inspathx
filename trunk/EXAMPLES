@@ -61,11 +61,11 @@ III
 
 Command:
 
-ruby inspathx.rb -d /sources/wordpress -g paths/wordpress-3.0.4
+ruby inspathx.rb -d /sources/wordpress -g paths/wordpress-3.0.4 -c wordpress-3.0.4
 
 Explanation:
 
-The inspathx will read file listing in /sources/wordpress directory and generate a file,wordpress-3.0.4, under 'paths' directory.
+The inspathx will read file listing in /sources/wordpress directory and generate a file,wordpress-3.0.4 with comment of wordpress-3.0.4 under 'paths' directory. Note that generated file has date and time inserted. You don't need to specify them manually.
 
 
 IV.
@@ -78,6 +78,13 @@ Explanation:
 The inspathx will read file listing from the file, wordpress-3.0.4, under 'paths' directory and make the request.
 
 
+V.
+
+Command:
+ruby inspathx.rb -d paths/wordpress-3.0.4 -u http://localhost/wp --x-p
+
+Explanation:
+This will create an additional file , localhost-wp.log-path_vuln.txt, which is qualified for path definition file to be put in path_vulns/ folder.  All you need is to check the file and (if any) to remove strings from I till [*]  to make sure there are only paths starting / like /admin.php. 
 
 
 See http://www.aldeid.com/index.php/Inspathx  for more explanations illustrating with Damn Vulnerable Web Application (DVWA).

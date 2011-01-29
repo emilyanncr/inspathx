@@ -92,6 +92,11 @@ def logpath(s)
   logger.close
 end
 
+def cleanvlog(s)
+  $logpath + '-path_vuln.txt'
+  if File.
+
+end
 
 def path_check(s)
   p = ''
