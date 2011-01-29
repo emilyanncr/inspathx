@@ -27,4 +27,4 @@ added method (get by default)  support
 added follow redirect support
 	--follow-redirect
 	
-added cold fusion language support; when feeded by large inputs, cold fusion tend to reveal source code disclosure when used as IIS ISAPI extensions
+added cold fusion language support; when feeded by large inputs, cold fusion apps tend to reveal source code disclosure if without boundary checks when used as IIS ISAPI extensions
