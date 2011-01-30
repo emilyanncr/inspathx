@@ -84,7 +84,7 @@ Command:
 ruby inspathx.rb -d paths/wordpress-3.0.4 -u http://localhost/wp --x-p
 
 Explanation:
-This will create an additional file , localhost-wp.log-path_vuln.txt, which is qualified for path definition file to be put in path_vulns/ folder.  All you need is to check the file and (if any) to remove strings from I till [*]  to make sure there are only paths starting / like /admin.php. 
+This will create an additional file , localhost-wp.log-path_vuln.txt, which is qualified for path definition file to be put in path_vulns/ folder.  
 
 
 See http://www.aldeid.com/index.php/Inspathx  for more explanations illustrating with Damn Vulnerable Web Application (DVWA).

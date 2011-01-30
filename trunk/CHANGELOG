@@ -1,5 +1,5 @@
 
-2011-01-20
+2011-01-31
 ----------------
 
 covered remaining checks (empty array, null cookie) in Full_Path_Disclosure (http://www.owasp.org/index.php/Full_Path_Disclosure) of OWASP Application Security Desk Reference (ASDR) Project (http://www.owasp.org/index.php/Category:OWASP_ASDR_Project)
@@ -28,3 +28,7 @@ added follow redirect support
 	--follow-redirect
 	
 added cold fusion language support; when feeded by large inputs, cold fusion apps tend to reveal source code disclosure if without boundary checks when used as IIS ISAPI extensions
+
+added --rm option to remove directory used to generate path list
+
+cleaned -vuln-path.txt to make it ready as path definition
