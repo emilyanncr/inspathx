@@ -85,16 +85,50 @@ end
 
 
 def logpath(s)
-  file  = $logpath + '-path_vuln.txt'
+  file  = $logpath + '-path_vuln_.txt'
   logger = Logger.new(file)  
   logger.datetime_format = ""
   logger.info(s)
   logger.close
 end
 
-def cleanvlog(s)
-  $logpath + '-path_vuln.txt'
-  if File.
+def cleanvlog()
+  ologpath = $logpath + '-path_vuln_.txt'
+  nlogpath = $logpath + '-path_vuln.txt'
+
+  unless File.exist? ologpath
+    return
+  end  
+
+  sf = File.new(ologpath,"r")
+  furl = []
+  while fline = sf.gets
+      fu = ''
+      if fline.length > 1 and fline =~ /INFO/
+          fu = fline.to_s
+          fu = fu[fu.index(': ')+2,fu.length]        
+          fu.gsub!("\n","")
+          fu.gsub!("\r\n","")
+          furl << fu
+      end
+  end
+  
+  sf.close
+                  
+  if furl.length > 0
+      flist = File.new(nlogpath,"w")
+      flist.puts("# Date: #{Time.now.strftime("%Y-%m-%d %H:%M:%S")}\n\n")
+  
+      furl.each do |fl|
+          flist.puts(fl)
+      end
+      if File.exist? ologpath
+        File.delete ologpath
+      end    
+  end
+  
+  flist.close
+  
 
 end
 
@@ -351,11 +385,11 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
             purl = purl.gsub($target,'')
             msg = "/#{purl}"
             print "\n#{msg}"        
-                     
+            logpath("#{msg}")           
           else            
             puts "\n#{msg}"  
           end
-          logpath("#{msg}")  
+          
       end 
     elsif req.code == "404"
       #uncomment if you want
@@ -531,6 +565,11 @@ def main
                 options[:gen] = ge
             end
 
+            options[:removedirg] =  false
+            opts.on('--rm','remove source directory used to generate path file list.')   do |ge|    
+                options[:removedirg] = true
+            end
+
             options[:comment] = ''
             opts.on('-c','--comment STRING','comment for path definition file to be used with -g and -d options. date is automatically appended.')   do |co|    
             options[:comment] = co
@@ -579,9 +618,11 @@ def main
                 end
                 puts "\nSuccessfully saved as #{fgen} with #{fcount} file paths.\nNext time, feed its path in -d option.\n\nSend bugs, suggestions, contributions to inspathx[at]yehg.net"
                 flist.close
-                puts 'Removing directory ' + sourcepath + ' ...'
-                puts 'Done!'
-                FileUtils.rm_rf(sourcepath)
+                if options[:removedirg]
+                    puts 'Removing directory ' + sourcepath + ' ...'                
+                    FileUtils.rm_rf(sourcepath)
+                    puts 'Done!'
+                end 
                 exit!
             else
                error_msg('source directory (-d) does not exist.')
@@ -598,6 +639,7 @@ def main
         targeturl = 'http://' + targeturl unless targeturl =~ /^htt(p|ps):\/\//i
         targeturl += '/' if URI.parse(targeturl).path.size == 0
         targeturl += '/' unless targeturl[targeturl.length-1] == '/'
+        
         $target = targeturl
         maxthread = options[:threads].to_i
         $language = options[:language].to_s.downcase()
@@ -658,6 +700,10 @@ def main
         if File.exist? $logpath
           File.delete $logpath
         end
+        if File.exist? $logpath + '-path_vuln.txt'
+          File.delete $logpath + '-path_vuln.txt'
+        end
+        
           
 
         #################################################################
@@ -795,7 +841,8 @@ def main
             server_root = correct_path(server_root,server_user_name)
             puts "! Server path extracted = #{server_root}"
         end    
-
+        cleanvlog()
+        
         puts "\n# vulnerable url(s) = #{found}"
         puts "# total requests = #{reqcount}"
         puts "# done at #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}"

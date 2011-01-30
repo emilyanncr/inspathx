@@ -158,10 +158,10 @@ I, [2010-09-22 18:00:20 pid:#9284]  INFO -- : [*] http://localhost/mambo/adminis
 I, [2010-09-22 18:00:20 pid:#9284]  INFO -- : [*] http://localhost/mambo/administrator/popups/index3pop.php
 
 [html_source]
-<?xml version="1.0"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title> - Administration [Mambo]</title>
+<?xml version="1.0"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title> - Administration [Mambo]</title>
 <link rel="stylesheet" href="templates/<br />
 <b>Fatal error</b>:  Call to a member function getTemplate() on a non-object in <b>/home/victim/public_html/mambo/administrator/popups/index3pop.php</b> on line <b>6</b><br />
 [/html_source]
