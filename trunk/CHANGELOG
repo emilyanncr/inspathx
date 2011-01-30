@@ -31,4 +31,4 @@ added cold fusion language support; when feeded by large inputs, cold fusion app
 
 added --rm option to remove directory used to generate path list
 
-cleaned -vuln-path.txt to make it ready as path definition
+cleaned *-vuln-path.txt file content to make it ready for path definition file
