@@ -1,5 +1,8 @@
-# 9:40 PM Wednesday, January 19, 2011
-
+# inspathx # ADODB #
+##
+# Date: 3:45 PM Monday, January 31, 2011
+# Homepage: http://adodb.sourceforge.net/
+##
 /adodb/tests/testsessions.php
 /adodb/tests/testpear.php
 /adodb/tests/testpaging.php
@@ -18,6 +21,9 @@
 /adodb/tests/test-active-relationsx.php
 /adodb/tests/test-active-recs2.php
 /adodb/tests/test-datadict.php
+/adodb/tests/tmssql.php?do[]
+/adodb/tests/tmssql.php?do=tmssql
+/adodb/tests/tmssql.php?do=tpear
 /adodb/tests/benchmark.php
 /adodb/session/old/adodb-session.php
 /adodb/session/old/adodb-cryptsession.php
@@ -33,3 +39,4 @@
 /adodb/drivers/adodb-pdo_sqlite.inc.php
 /adodb/datadict/datadict-firebird.inc.php
 /adodb/contrib/toxmlrpc.inc.php
+
