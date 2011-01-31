@@ -6,8 +6,6 @@ covered remaining checks (empty array, null cookie) in Full_Path_Disclosure (htt
 
 added support for generating path definition file and you can now use -d with path-definition file to check in addition to cms directory path
 
-fixed username extraction 
-
 added support for reading gzip/deflate compressed response from server
 
 added regexp support (use your own regexp rules to search in returned responses in addition to built-in regexp error messages)
@@ -35,3 +33,6 @@ cleaned *-vuln-path.txt file content to make it ready for path definition file
 
 added support for [] , querystring in path definition file 
 
+fixed username and web root path extraction for both *nux and windows 
+
+added detection support for html_errors being set as off in php.ini
