@@ -154,13 +154,18 @@ def correct_path(p,u)
         if ps.class.to_s == 'Array'
             return ps[0]
         end
+    else
+        ps = p[0].to_s.scan(/(\/[^<^\/]+)/)
+        if ps.class.to_s == 'Array'
+            return ps[0][0]
+        end        
     end
     return p
 end
 
 def user_check(s)
   u = ''
-  if u.class.to_s == 'Array' and u.length == 1 
+  if u.class.to_s == 'Array' and u.length == 1     
     u = s[0]
   else 
     u = s    
@@ -362,7 +367,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     
       case $language
           when /(php4|php5|php6|php)/            
-            if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:)/mi.match(body)
+            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:)/mi.match(body)
               is_vuln = true
             end         
           when /(asp|aspx)/
@@ -379,7 +384,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
             end 
                     
       else            
-            if /(<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
+            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
                 is_vuln = true
             end              
       end
@@ -824,33 +829,51 @@ def main
 
         logcontent = IO.readlines($logpath)	
         found = logcontent.to_s.scan("[html_source]").count
-
+        win = false
         if found > 0
 
            bs = logcontent.to_s.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
-           if server_user_name == '' || server_user_name.class.to_s == 'NilClass'
-              if bs.class.to_s == 'Array'
+           if bs.class.to_s == 'Array'
                   server_user_name = bs[0].to_s
-              end
            end
-           
-           if logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0 && server_root != ''
-              server_root = logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+          
+           # check for user name in windows path
+           if server_user_name == ''                
+                bs = logcontent.to_s.scan(/[a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\s^]+)\\\\/i)
+                if bs[0][1].class.to_s == 'String'
+                       server_user_name = bs[0][1]
+                       win = true
+                end
            end
-
-
+        
+           if win == false
+                if logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0 
+                    server_root = logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+                end
+            else
+                sr = logcontent.to_s.scan(/([a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\s^]+)\\\\)/i)      
+                if sr[0][0].class.to_s == 'String'
+                    server_root = sr[0][0]
+                    server_root.gsub!('\\\\','\\')
+                end
+            end
         end
+        
         server_user_name = '' if found == 0
         server_root = '' if found == 0
 
         puts "\n\n"
         puts 
-
+        
         puts "! Username detected = #{server_user_name}" if user_check(server_user_name)
-        if (path_check(server_root))
-            server_root = correct_path(server_root,server_user_name)
-            puts "! Server path extracted = #{server_root}"
-        end    
+        if win == false
+            if (path_check(server_root))
+                server_root = correct_path(server_root,server_user_name)
+                puts "! Server path extracted = #{server_root}"
+            end    
+        else
+            puts "! Server path extracted = #{server_root}"        
+        end
         cleanvlog()
         
         puts "\n# vulnerable url(s) = #{found}"
