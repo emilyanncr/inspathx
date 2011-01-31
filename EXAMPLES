@@ -22,6 +22,7 @@ Usage: inspathx [options]
     -p, --param-array                identify parameters in target url,make 'em array & request (--data value untouched
     -r, --regexp REGEXP              specify your own regexp to search in returned responses (eg: "require\(([a-zA-Z.\/\.-]+)\)") [will combine with built-in regexp]
     -g, --gen FILE                   read source directory (-d) & generate file list so next time you can feed this file path in -d option instead of source directory.
+		--rm                         remove source directory used to generate path file list.
     -c, --comment STRING             comment for path definition file to be used with -g and -d options. date is automatically appended.
     -x, --x-p                        show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.
 
