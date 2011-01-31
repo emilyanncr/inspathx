@@ -73,7 +73,7 @@ require 'erb'
 require 'fileutils'
 
 # change it if you want it
-$useragent = {'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0b8) Gecko/20100101 Firefox/4.0'}
+$useragent = {'User-Agent'=>'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
 
 
 def log(s)
@@ -338,7 +338,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     if req['Content-Encoding'] =~ /gzip|deflate/
         body = decompress(body,req['Content-Encoding'])
     end
-   
+
     
     if /(20|50)/.match(req.code.to_s) 
       if body.length < 5 or uri.path =~ /index\.([a-z]{2,4})%$/        
@@ -588,6 +588,7 @@ def main
         sourcepath = options[:dir].to_s
         $extension = options[:extension].to_s.downcase().gsub(",","|")
         filter = /\.(#{$extension})$/i
+        filter2 = /\.(#{$extension})+/i
 
         if options[:gen] != nil
             error_msg('-d/--dir option is neccessary when you specify -g/--gen option') if sourcepath == ''
@@ -775,12 +776,14 @@ def main
                 furl = []
                 while fline = sf.gets
                     fu = ''
-                    if fline.length > 1 and fline !~ /^#/ and filter.match(fline) 
-                        target  = targeturl[0..(targeturl.length-2)] if fline.to_s =~ /^\//
-                        fu = target  + fline.to_s
-                        fu.gsub!("\n","")
-                        fu.gsub!("\r\n","")
-                        furl << fu
+                    if fline.length > 1 and fline !~ /^#/ 
+                        if filter.match(fline) or filter2.match(fline)
+                            target  = targeturl[0..(targeturl.length-2)] if fline.to_s =~ /^\//
+                            fu = target  + fline.to_s
+                            fu.gsub!("\n","")
+                            fu.gsub!("\r\n","")
+                            furl << fu
+                        end
                     end
                 end
                 sf.close
