@@ -316,17 +316,24 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     http.open_timeout = 180
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
-    
     isvuln = false
+    query = ''
+    query = uri.query unless uri.query == nil or uri.query == ''    
     if method == 'get'
-        if data != ''
-            req,body = http.get(uri.path+'?'+data,headers)    
+        query = query + '&' + data unless data == ''
+        if query != ''
+            req,body = http.get(uri.path+'?'+query,headers)    
         else
             req,body = http.get(uri.path,headers)    
         end
     else
-        req,body = http.post2(uri.path,data,headers)    
+        if query != ''
+            req,body = http.post2(uri.path+'?'+query,data,headers)    
+        else
+            req,body = http.post2(uri.path,data,headers)    
+        end
     end
+    
     if req.code =~ /(301|302)/        
         if follow_redirect == true
             puts "-> #{url} | #{req.code.to_s}\n(Redirected to : " + req.header["location"]  + ")\n\n"
