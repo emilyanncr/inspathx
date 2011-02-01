@@ -149,14 +149,17 @@ def path_check(s)
 end
 
 def correct_path(p,u)
+    if p!= ''
+        p.gsub!(/("|\[)/,"")
+    end
     if u != '' and p.class.to_s == 'Array'
         ps = p[0].to_s.scan(/(\/home\/#{u}\/([0-9a-zA-Z\.\_\-\+]+)\/)/)[0]
-        if ps.class.to_s == 'Array'
+        if ps.class.to_s == 'Array' and ps.size > 0
             return ps[0]
         end
     else
-        ps = p[0].to_s.scan(/(\/[^<^\/]+)/)
-        if ps.class.to_s == 'Array'
+        ps = p[0].to_s.scan(/(\/[^<^\/]+)/)        
+        if ps.class.to_s == 'Array'  and ps.size > 0
             return ps[0][0]
         end        
     end
@@ -488,6 +491,11 @@ def parse_data(s)
         return r    
     end
 end
+
+def deb(s)
+    puts '***' + s.to_s
+    exit!
+end    
 
 def ar2s(ar)
     r = ''
@@ -830,6 +838,7 @@ def main
         logcontent = IO.readlines($logpath)	
         found = logcontent.to_s.scan("[html_source]").count
         win = false
+        
         if found > 0
 
            bs = logcontent.to_s.scan(/home\/([0-9a-zA-Z\.\_\-\+]+)\//)[0]
@@ -840,21 +849,36 @@ def main
            # check for user name in windows path
            if server_user_name == ''                
                 bs = logcontent.to_s.scan(/[a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\s^]+)\\\\/i)
-                if bs[0][1].class.to_s == 'String'
-                       server_user_name = bs[0][1]
-                       win = true
+                if bs.size > 0
+                    if bs[0][1].class.to_s == 'String'
+                           server_user_name = bs[0][1]
+                           win = true
+                    end
                 end
            end
         
            if win == false
-                if logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/).length > 0 
-                    server_root = logcontent.to_s.scan(/(\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/[a-zA-Z0-9\.\_]+\/)/)[0]
+                
+                if logcontent.to_s.scan(/<b>([^<]+)<\/b>/).length > 0 
+                    
+                    server_root = logcontent.to_s.scan(/<b>(\/[^<]+)<\/b>/)[0].to_s
+                    if server_root =~ /www|public_html/
+                        server_root = server_root[0,server_root.index(/(www|public_html)/)+4].to_s
+                    elsif server_root.scan(/\/[\w]+\/[\w]+\//).length > 0
+                        server_root = server_root.scan(/\/[\w]+\/[\w]+\//)[0].to_s
+                    end
+                    
+                elsif logcontent.to_s.scan(/in ([^<]+) on line/).length > 0 
+                    server_root = logcontent.to_s.scan(/in ([^<]+) on line/)[0]
                 end
+                
             else
                 sr = logcontent.to_s.scan(/([a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\s^]+)\\\\)/i)      
-                if sr[0][0].class.to_s == 'String'
-                    server_root = sr[0][0]
-                    server_root.gsub!('\\\\','\\')
+                if sr.size > 0
+                    if sr[0][0].class.to_s == 'String'
+                        server_root = sr[0][0]
+                        server_root.gsub!('\\\\','\\')
+                    end
                 end
             end
         end
@@ -867,13 +891,15 @@ def main
         
         puts "! Username detected = #{server_user_name}" if user_check(server_user_name)
         if win == false
-            if (path_check(server_root))
+            if (path_check(server_root))  
                 server_root = correct_path(server_root,server_user_name)
-                puts "! Server path extracted = #{server_root}"
+                puts "! Server path extracted = #{server_root}" unless server_root  == ''
             end    
+            
         else
-            puts "! Server path extracted = #{server_root}"        
+            puts "! Server path extracted = #{server_root}"  unless server_root  == ''       
         end
+        
         cleanvlog()
         
         puts "\n# vulnerable url(s) = #{found}"
