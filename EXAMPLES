@@ -13,23 +13,18 @@ Usage: inspathx [options]
     -u, --url http://site.com/       set url [Required if -g option is not specified]
     -t, --threads 10                 set thread number(default: 10)
     -l, --language php               set language [php,asp,aspx,jsp,jspx,cfm,all] (default all - means scan all)
-    -x, --extension php              set file extensions (php4,php5,...)  default regex: php4,php5,php6,php,asp,aspx,jsp
-,jspx,cfm
+    -x, --extension php              set file extensions (php4,php5,...)  default regex: php4,php5,php6,php,asp,aspx,jsp,jspx,cfm
     -m, --method TYPE                http method get/post (default: get)
     -h, --headers HEADERS            add http header (eg. "cookie: sid[%00]=1\r\nX-pingback:: %00"
     -q, --data DATA                  http get/post data (e.g "a=<script>&b=../../../")
     -n, --null-cookie                add null session cookie (no need to specify cookie name).
     -f, --follow                     follow http redirection
-    -p, --param-array                identify parameters in target url,make 'em array & request (--data value untouched
-    -r, --regexp REGEXP              specify your own regexp to search in returned responses (eg: "require\(([a-zA-Z.\/\
-.-]+)\)") [will combine with built-in regexp]
-    -g, --gen FILE                   read source directory (-d) & generate file list so next time you can feed this file
- path in -d option instead of source directory.
+    -p, --param-array                identify parameters in target url,make 'em array & request (--data value untouched    -r, --regexp REGEXP              specify your own regexp to search in returned responses (eg: "require\(([a-zA-Z.\/\.-]+)\)") [will combine with built-in regexp]
+    -g, --gen FILE                   read source directory (-d) & generate file list so next time you can feed this file path in -d option instead of source directory.
         --rm                         remove source directory used to generate path file list.
-    -c, --comment STRING             comment for path definition file to be used with -g and -d options. date is automat
-ically appended.
-        --x-p                        show only paths in console and write them to file with path_vuln.txt surfix. This d
-oes not contain target url portion.
+    -c, --comment STRING             comment for path definition file to be used with -g and -d options. date is automatically appended.
+        --x-p                        show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.
+	-s, --search STRING              search path definition files in paths/ & paths_vuln/ directories.
 
 Example:
 ruby inspathx.rb -d /sources/phpmyadmin -u http://localhost/phpmyadmin
