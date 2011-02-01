@@ -107,7 +107,7 @@ def cleanvlog()
       if fline.length > 1 and fline =~ /INFO/
           fu = fline.to_s
           fu = fu[fu.index(': ')+2,fu.length]        
-          fu.gsub!("\n","")
+          fu.gsub!("\n","") 
           fu.gsub!("\r\n","")
           furl << fu
       end
@@ -150,18 +150,26 @@ end
 
 def correct_path(p,u)
     if p!= ''
-        p.gsub!(/("|\[)/,"")
+        p.gsub!(/("|\[)/,"") if p.class.to_s == 'String'
     end
     if u != '' and p.class.to_s == 'Array'
         ps = p[0].to_s.scan(/(\/home\/#{u}\/([0-9a-zA-Z\.\_\-\+]+)\/)/)[0]
         if ps.class.to_s == 'Array' and ps.size > 0
             return ps[0]
         end
-    else
-        ps = p[0].to_s.scan(/(\/[^<^\/]+)/)        
-        if ps.class.to_s == 'Array'  and ps.size > 0
-            return ps[0][0]
-        end        
+    else 
+        px = p[0].to_s
+       if px =~ /htdocs/
+           p = px[0,px.index(/htdocs/)+6].to_s
+       elsif px =~ /wwwroot/
+           p = px[0,px.index(/wwwroot/)+8].to_s
+       elsif px =~ /www/
+           p = px[0,px.index(/www/)+4].to_s
+       elsif px =~ /public_html/
+           p = px[0,px.index(/public_html/)+12].to_s
+       elsif px.scan(/\/[\w]+\/[\w]+\//).length > 0
+           p = px.scan(/\/[\w]+\/[\w]+\//)[0].to_s
+       end
     end
     return p
 end
@@ -318,10 +326,10 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
   begin    
     
     uri = URI.parse(url)
-    uri.path += '/' if uri.path.size == 0
+    uri.path += '/' if uri.path.size == 0    
     http = Net::HTTP.new(uri.host,uri.port)
-    http.read_timeout = 180
-    http.open_timeout = 180
+    http.read_timeout = 100
+    http.open_timeout = 80
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
     isvuln = false
@@ -349,7 +357,6 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
         end
     end
     
-    
     if req['Content-Encoding'] =~ /gzip|deflate/
         body = decompress(body,req['Content-Encoding'])
     end
@@ -370,7 +377,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     
       case $language
           when /(php4|php5|php6|php)/            
-            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:)/mi.match(body)
+            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:|Warning:  session_start\(\) \[|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m)/mi.match(body)
               is_vuln = true
             end         
           when /(asp|aspx)/
@@ -387,7 +394,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
             end 
                     
       else            
-            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
+            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
                 is_vuln = true
             end              
       end
@@ -650,7 +657,8 @@ def main
             end
             exit!
         end
-        print_help(parser.to_s) if options[:dir] == nil
+        
+        options[:dir] = ".DUMMY" if options[:dir] == nil
         sourcepath = options[:dir].to_s
         $extension = options[:extension].to_s.downcase().gsub(",","|")
         filter = /\.(#{$extension})$/i
@@ -849,6 +857,9 @@ def main
                             fu.gsub!("\n","")
                             fu.gsub!("\r\n","")
                             furl << fu
+                        elsif sourcepath == '.DUMMY'
+                            target  = targeturl[0..(targeturl.length-2)] 
+                            furl <<  target
                         end
                     end
                 end
@@ -894,21 +905,30 @@ def main
           
            # check for user name in windows path
            if server_user_name == ''                
-                bs = logcontent.to_s.scan(/[a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\s^]+)\\\\/i)
+                bs = logcontent.to_s.scan(/[a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\\]+)\\\\/i)
                 if bs.size > 0
                     if bs[0][1].class.to_s == 'String'
                            server_user_name = bs[0][1]
-                           win = true
+                          
                     end
                 end
            end
-        
+            
+            # check if there is windows path pattern           
+            if logcontent.to_s.scan(/[a-z]:\\\\([^<]+)/i).size > 0
+                 win = true 
+            end
+             
            if win == false
                 
                 if logcontent.to_s.scan(/<b>([^<]+)<\/b>/).length > 0 
                     
                     server_root = logcontent.to_s.scan(/<b>(\/[^<]+)<\/b>/)[0].to_s
-                    if server_root =~ /www/
+                    if server_root =~ /htdocs/
+                        server_root = server_root[0,server_root.index(/htdocs/)+6].to_s
+                    elsif server_root =~ /wwwroot/
+                        server_root = server_root[0,server_root.index(/wwwroot/)+8].to_s
+                    elsif server_root =~ /www/
                         server_root = server_root[0,server_root.index(/www/)+4].to_s
                     elsif server_root =~ /public_html/
                         server_root = server_root[0,server_root.index(/public_html/)+12].to_s
@@ -916,16 +936,20 @@ def main
                         server_root = server_root.scan(/\/[\w]+\/[\w]+\//)[0].to_s
                     end
                     
-                elsif logcontent.to_s.scan(/in ([^<]+) on line/).length > 0 
-                    server_root = logcontent.to_s.scan(/in ([^<]+) on line/)[0]
+                elsif logcontent.to_s.scan(/in (\/[^<]+) on line/).length > 0 
+                    
+                    server_root = logcontent.to_s.scan(/in (\/[^<]+) on line/)[0]
+                    
                 end
                 
             else
-                sr = logcontent.to_s.scan(/([a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\s^]+)\\\\)/i)      
-                if sr.size > 0
-                    if sr[0][0].class.to_s == 'String'
-                        server_root = sr[0][0]
-                        server_root.gsub!('\\\\','\\')
+                if server_root == ''                
+                    sr = logcontent.to_s.scan(/([a-z]:\\\\([^<^\\\\]+)\\\\([^<^\\\\]+))/i)   
+                    if sr.size > 0
+                        if sr[0][0].class.to_s == 'String'
+                            server_root = sr[0][0].to_s
+                            server_root.gsub!('\\\\','\\') 
+                        end
                     end
                 end
             end
@@ -941,6 +965,7 @@ def main
         if win == false
             if (path_check(server_root))  
                 server_root = correct_path(server_root,server_user_name)
+                
                 puts "! Server path extracted = #{server_root}" unless server_root  == ''
             end    
             
