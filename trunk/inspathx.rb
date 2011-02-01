@@ -599,11 +599,54 @@ def main
             opts.on('--x-p','show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.')  do |xv|
                 options[:pval] = true
             end  
+            
+            options[:search] = ''
+            opts.on('-s','--search STRING','search path definition files in paths/ & paths_vuln/ directories.')   do |se|    
+            options[:search] = se
+            end
+            
 
         end
 
         parser.parse!
 
+        if options[:search] != ''
+            print_banner()
+            search = options[:search]
+            search.gsub!(/\*|\&|\[|\]|\|\>|\<|\?|\/|\:|\;|\~|\`|\(|\)|\+|\=/)
+            
+            
+            puts
+            puts '~ searching for "' + search + '"  in path definition directories ...'
+            puts
+
+            spath = "paths" + File::SEPARATOR
+            files = Dir.new(spath).entries
+            ffound = 0
+            files.each do |f|
+                nf = f.downcase
+                if nf =~ /(#{search})/
+                   puts '--> ' + spath + nf
+                   ffound += 1
+                end
+            end 
+
+            spath = "paths_vuln" + File::SEPARATOR
+            files = Dir.new(spath).entries
+            
+            files.each do |f|
+                nf = f.downcase
+                if nf =~ /(#{search})/
+                   puts '--> ' + spath + nf
+                   ffound += 1
+                end
+            end             
+            puts 
+            puts "~ 0 file found; tune your search ; case-insensitive" if ffound == 0
+            puts "~ #{ffound} file found" if ffound == 1
+            puts "~ #{ffound} files found" if ffound > 0
+            exit!
+        end
         print_help(parser.to_s) if options[:dir] == nil
         sourcepath = options[:dir].to_s
         $extension = options[:extension].to_s.downcase().gsub(",","|")

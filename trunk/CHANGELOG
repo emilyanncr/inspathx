@@ -1,6 +1,8 @@
 
-2011-01-31
+2011-02-01
 ----------------
+
+added search feature (e.g. ruby inspathx -s zikula) 
 
 covered remaining checks (empty array, null cookie) in Full_Path_Disclosure (http://www.owasp.org/index.php/Full_Path_Disclosure) of OWASP Application Security Desk Reference (ASDR) Project (http://www.owasp.org/index.php/Category:OWASP_ASDR_Project)
 
