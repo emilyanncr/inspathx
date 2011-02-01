@@ -862,8 +862,10 @@ def main
                 if logcontent.to_s.scan(/<b>([^<]+)<\/b>/).length > 0 
                     
                     server_root = logcontent.to_s.scan(/<b>(\/[^<]+)<\/b>/)[0].to_s
-                    if server_root =~ /www|public_html/
-                        server_root = server_root[0,server_root.index(/(www|public_html)/)+4].to_s
+                    if server_root =~ /www/
+                        server_root = server_root[0,server_root.index(/www/)+4].to_s
+                    elsif server_root =~ /public_html/
+                        server_root = server_root[0,server_root.index(/public_html/)+12].to_s
                     elsif server_root.scan(/\/[\w]+\/[\w]+\//).length > 0
                         server_root = server_root.scan(/\/[\w]+\/[\w]+\//)[0].to_s
                     end
