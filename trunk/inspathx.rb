@@ -643,8 +643,10 @@ def main
             end             
             puts 
             puts "~ 0 file found; tune your search ; case-insensitive" if ffound == 0
-            puts "~ #{ffound} file found" if ffound == 1
-            puts "~ #{ffound} files found" if ffound > 0
+            if ffound == 1
+                puts "~ #{ffound} file found" 
+            elsif ffound > 0
+            puts "~ #{ffound} files found" 
             exit!
         end
         print_help(parser.to_s) if options[:dir] == nil
