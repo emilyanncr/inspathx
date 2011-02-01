@@ -646,7 +646,8 @@ def main
             if ffound == 1
                 puts "~ #{ffound} file found" 
             elsif ffound > 0
-            puts "~ #{ffound} files found" 
+                puts "~ #{ffound} files found" 
+            end
             exit!
         end
         print_help(parser.to_s) if options[:dir] == nil
