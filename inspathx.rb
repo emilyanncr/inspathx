@@ -543,7 +543,7 @@ def main
             end  
 
             options[:headers] = ''
-            opts.on('-h','--headers HEADERS','add http header (eg. "cookie: sid[%00]=1\r\nX-pingback:: %00"') do |h|
+            opts.on('-h','--headers HEADERS','add http header (eg. "cookie: sid[%00]=1\r\nX-pingback:: %00")') do |h|
                 options[:headers] = h
             end  
 
@@ -563,7 +563,7 @@ def main
             end  
               
             options[:param_array] = false
-            opts.on('-p','--param-array','identify parameters in target url,make \'em array & request (--data value untouched')  do |pa|
+            opts.on('-p','--param-array','identify parameters in target url,make \'em array & request (--data value untouched)')  do |pa|
                 options[:param_array] = true
             end  
 
@@ -588,7 +588,7 @@ def main
             end
 
             options[:pval] = false
-            opts.on('-x','--x-p','show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.')  do |xv|
+            opts.on('--x-p','show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.')  do |xv|
                 options[:pval] = true
             end  
 
