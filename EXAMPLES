@@ -9,7 +9,7 @@ svn co http://inspathx.googlecode.com/svn/trunk/ inspathx
 =============================================================
 
 Usage: inspathx [options]
-    -d, --dir /source/app            set source code directory/source path definition file of application [Required]
+    -d, --dir /source/app            set source code directory/source path definition file of application 
     -u, --url http://site.com/       set url [Required if -g option is not specified]
     -t, --threads 10                 set thread number(default: 10)
     -l, --language php               set language [php,asp,aspx,jsp,jspx,cfm,all] (default all - means scan all)

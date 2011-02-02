@@ -528,7 +528,7 @@ def main
         parser = OptionParser.new do|opts|
 
             options[:dir] =  nil
-            opts.on('-d','--dir /source/app','set source code directory/source path definition file of application [Required]')   do |dir|    
+            opts.on('-d','--dir /source/app','set source code directory/source path definition file of application')   do |dir|    
                 options[:dir] = dir
             end
 
