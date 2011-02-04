@@ -1,3 +1,8 @@
+2011-02-05
+----------------
+
+fixed bad uri exception when uri contains characters like space, [,], {, }, <, ` ..etc  [reported by Brendan Coles]
+
 
 2011-02-01
 ----------------

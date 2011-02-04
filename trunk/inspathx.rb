@@ -64,6 +64,7 @@
 
 require 'net/http'
 require 'net/https'
+require 'uri'
 require 'open-uri'
 require 'thread'
 require 'find'
@@ -195,7 +196,7 @@ def get_cookie(url,data='',headers={},follow_redirect=false)
     uri.path += '/' if uri.path.size == 0
     http = Net::HTTP.new(uri.host,uri.port)
     http.read_timeout = 180
-    http.open_timeout = 180
+    http.open_timeout = 180 
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
     
@@ -239,8 +240,9 @@ def get_params(url,data,headers)
     uri = URI.parse(url)
     uri.path += '/' if uri.path.size == 0
     http = Net::HTTP.new(uri.host,uri.port)
-    http.read_timeout = 180
-    http.open_timeout = 180
+    http.read_timeout = 100
+    http.open_timeout = 80
+
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
 
@@ -320,6 +322,49 @@ def decompress(string, type='deflate')
     buf = tmp.read
   end
   buf
+end
+
+def fix_uri(u)
+    return URI.escape(u.to_s, Regexp.new("[^-_.!~*'\(\)a-zA-Z0-9\\d\/@\$]"))
+end
+
+def clean_ddslash(u)
+   
+   nu = u
+   
+   sc = 'http://' if /^http:/.match(u)
+   sc = 'https://' if /^https:/.match(u)
+
+   nu.sub!('http://','')
+   nu.sub!('https://','')
+
+   if nu.include?'//'
+      nu.gsub!('//','/')
+      return sc + nu
+   end
+   nu = sc + nu 
+   return nu
+
+end
+def extract_scheme(u)
+    unless u.split('/')[0] == nil
+        return u[0,u.split('/')[0].length-1]
+    else 
+        return 'http'
+    end
+end
+
+def extract_host(u)
+    unless u.split('/')[2] == nil
+        return u.split('/')[2]
+    else
+        return '/'
+    end
+end
+
+def extract_uri(s,h,u)
+    s = s + '://'
+    return u[s.length+h.length,u.length]
 end
 
 def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')   
@@ -712,13 +757,16 @@ def main
         targeturl = options[:url].to_s
 
         targeturl = 'http://' + targeturl unless targeturl =~ /^htt(p|ps):\/\//i
+        targeturl += '/' unless targeturl[targeturl.length-1,targeturl.length] == '/'
+        targeturl = clean_ddslash(targeturl)
+        tscheme = extract_scheme(targeturl)
+        thost = extract_host(targeturl)
+        tpath = fix_uri(extract_uri(tscheme,thost,targeturl))
+        targeturl = tscheme + '://' + thost  + tpath
         targeturl += '/' if URI.parse(targeturl).path.size == 0
-        targeturl += '/' unless targeturl[targeturl.length-1] == '/'
-        
         $target = targeturl
         maxthread = options[:threads].to_i
         $language = options[:language].to_s.downcase()
-
 
         sourcepath = sourcepath.gsub(/\\/,'/') # window
 
@@ -730,7 +778,7 @@ def main
 
         $logpath = targeturl.gsub(/(http|https):\/\//,'')
         $logpath = $logpath.gsub(/\//,'_')
-        $logpath = $logpath.gsub(/(\:|\;|\~|\!|\@|\$|\%|\*|\^|\(|\)|\'|\"|\/|<|>|\|)/,'-')
+        $logpath = $logpath.gsub(/(\:|\;|\~|\!|\@|\$|\*|\^|\(|\)|\'|\"|\/|<|>|\|)/,'-')
         if $logpath.length > 32 
          $logpath = $logpath[0,32] + '__.log'
         else
@@ -827,10 +875,11 @@ def main
                   type = case
                           when File.file?(f) then
                              if filter.match(f)  
-                                f = f.gsub(sourcepath,targeturl) 
+                                xf = fix_uri(f)
+                                xf = xf.gsub(sourcepath,targeturl) 
                                 scans[count] = Thread.new{
                                   mutex.synchronize do
-                                    get_url(f,method,data,headers,null_cookie,follow_redirect,regexp)                              
+                                    get_url(xf,method,data,headers,null_cookie,follow_redirect,regexp)                              
                                   end
                                 }
                                 count=count+1
@@ -853,9 +902,9 @@ def main
                     if fline.length > 1 and fline !~ /^#/ 
                         if filter.match(fline) or filter2.match(fline)
                             target  = targeturl[0..(targeturl.length-2)] if fline.to_s =~ /^\//
-                            fu = target  + fline.to_s
-                            fu.gsub!("\n","")
-                            fu.gsub!("\r\n","")
+                            fline.to_s.gsub!("\n","")
+                            fline.to_s.gsub!("\r\n","")                            
+                            fu = target  + fix_uri(fline.to_s)
                             furl << fu
                         elsif sourcepath == '.DUMMY'
                             target  = targeturl[0..(targeturl.length-2)] 
