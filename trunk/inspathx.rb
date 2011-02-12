@@ -325,7 +325,7 @@ def decompress(string, type='deflate')
 end
 
 def fix_uri(u)
-    return URI.escape(u.to_s, Regexp.new("[^-_.!~*'\(\)a-zA-Z0-9\\d\/@\$]"))
+    URI.escape(u.to_s, Regexp.new("[^-_.!~*'\(\)a-zA-Z0-9\\d\/@\$]"))
 end
 
 def clean_ddslash(u)
@@ -377,7 +377,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     http.open_timeout = 80
     http.use_ssl= true if uri.scheme == "https"
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE if uri.scheme == "https"
-    isvuln = false
+    is_vuln = false
     query = ''
     query = uri.query unless uri.query == nil or uri.query == ''    
     if method == 'get'
@@ -904,7 +904,10 @@ def main
                             target  = targeturl[0..(targeturl.length-2)] if fline.to_s =~ /^\//
                             fline.to_s.gsub!("\n","")
                             fline.to_s.gsub!("\r\n","")                            
-                            fu = target  + fix_uri(fline.to_s)
+                            fu = target.to_s  + fix_uri(fline.to_s).to_s
+                            if fu =~ /NilClass/
+                                error_msg('Triggered Nil value for target/uri; Check source path content for validity')
+                            end
                             furl << fu
                         elsif sourcepath == '.DUMMY'
                             target  = targeturl[0..(targeturl.length-2)] 
@@ -942,7 +945,7 @@ def main
         select(nil,nil,nil,2)
 
         logcontent = IO.readlines($logpath)	
-        found = logcontent.to_s.scan("[html_source]").count
+        found = logcontent.to_s.scan("[html_source]").size 
         win = false
         
         if found > 0
