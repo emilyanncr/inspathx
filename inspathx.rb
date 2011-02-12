@@ -398,7 +398,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     if req.code =~ /(301|302)/        
         if follow_redirect == true
             puts "-> #{url} | #{req.code.to_s}\n(Redirected to : " + req.header["location"]  + ")\n\n"
-            get_url(req.header["location"])
+            get_url($target+req.header["location"])
         end
     end
     
