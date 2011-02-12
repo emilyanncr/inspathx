@@ -1,3 +1,13 @@
+2011-02-10
+----------------
+
+fix: changed from Array method name count  to size for compatibility under 1.8.7 < 
+     ref: http://www.ruby-forum.com/topic/162578#868205
+	 Thanks to Andre Gironda for reporting this issue
+	 
+	 
+
+
 2011-02-05
 ----------------
 
