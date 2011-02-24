@@ -1,6 +1,8 @@
 2011-02
 ----------------
 
+add a path disclosure pattern for asp/asp.net
+
 fix: 302 redirect
 
 fix: changed from Array method name count  to size for compatibility under 1.8.7 < 
