@@ -6,7 +6,7 @@
 #    license: GPL 
 #    released date: 2010-09-28
 #     
-#    last updated: 2011-02-13
+#    last updated: 2011-02-24
 #
 #    (c) Aung Khant, http://yehg.net               
 #                                                 
@@ -416,7 +416,6 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
         return 
       end
       
-
     
       if regexp != ''
         if /(#{regexp})/mi.match(body)
@@ -428,9 +427,10 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
           when /(php4|php5|php6|php)/            
             if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:|Warning:  session_start\(\) \[|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m)/mi.match(body)
               is_vuln = true
+              puts $1
             end         
           when /(asp|aspx)/
-            if /(This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>)/mi.match(body)
+            if /(This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|strFileName=)/mi.match(body)
               is_vuln = true
             end         
           when /(jsp|jspx)/
@@ -443,7 +443,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
             end 
                     
       else            
-            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
+            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|strFileName=|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
                 is_vuln = true
             end              
       end
@@ -836,8 +836,12 @@ def main
         #################################################################
 
         print_banner()
-
-        puts "\n# target: #{targeturl}\n# source: #{sourcepath}\n# log file: #{$logpath}\n# follow redirect: #{follow_redirect}\n# null cookie: #{null_cookie}\n# total threads: #{maxthread}\n# time: #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n"    
+        if sourcepath == '.DUMMY'
+            puts "\n# target: " + targeturl[0,targeturl.length-1] 
+        else 
+            puts "\n# target: #{targeturl}" 
+        end
+        puts "# source: #{sourcepath}\n# log file: #{$logpath}\n# follow redirect: #{follow_redirect}\n# null cookie: #{null_cookie}\n# total threads: #{maxthread}\n# time: #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n"    
 
          
         log("TargetURL: #{targeturl}")
@@ -948,7 +952,7 @@ def main
 
         select(nil,nil,nil,2)
 
-        logcontent = IO.readlines($logpath)	
+        logcontent = IO.readlines($logpath)
         found = logcontent.to_s.scan("[html_source]").size 
         win = false
         
@@ -960,7 +964,7 @@ def main
            end
           
            # check for user name in windows path
-           if server_user_name == ''                
+           if server_user_name == ''    
                 bs = logcontent.to_s.scan(/[a-z]:\\\\(Documents and Settings|Users)\\\\([^<^\\]+)\\\\/i)
                 if bs.size > 0
                     if bs[0][1].class.to_s == 'String'
@@ -1001,7 +1005,13 @@ def main
             else
                 if server_root == ''                
                     sr = logcontent.to_s.scan(/([a-z]:\\\\([^<^\\\\]+)\\\\([^<^\\\\]+))/i)   
-                    if sr.size > 0
+                    sr2 = logcontent.to_s.scan(/([a-z]:\\\\([^<^\\\\]+)\\\\([^<^\\\\]+)\\\\([^<^\\\\]+))/i)   
+                    if sr2.size > 0
+                        if sr2[0][0].class.to_s == 'String'
+                            server_root = sr2[0][0].to_s
+                            server_root.gsub!('\\\\','\\') 
+                        end
+                    elsif sr.size > 0
                         if sr[0][0].class.to_s == 'String'
                             server_root = sr[0][0].to_s
                             server_root.gsub!('\\\\','\\') 
