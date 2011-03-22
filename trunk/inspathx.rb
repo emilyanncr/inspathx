@@ -380,7 +380,15 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
     is_vuln = false
     query = ''
     query = uri.query unless uri.query == nil or uri.query == ''    
-    if method == 'get'
+    if method == 'head'
+            req,body = http.get(uri.path,headers)    
+            if req['X-AspNet-Version'] =~ /^1/i
+                puts '[*] testing for dotnet 1.x full path disclosure ..'
+                get_url(url + 'a%5c.aspx','get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
+                get_url(url + '~.aspx','get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
+                return
+            end
+    elsif method == 'get'
         query = query + '&' + data unless data == ''
         if query != ''
             req,body = http.get(uri.path+'?'+query,headers)    
@@ -399,9 +407,9 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
         if follow_redirect == true
             puts "-> #{url} | #{req.code.to_s}\n(Redirected to : " + req.header["location"]  + ")\n\n"
             if req.header["location"] =~ /^http/i
-                get_url(req.header["location"])
+                get_url(req.header["location"],'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
             else    
-                get_url($target.to_s +req.header["location"])
+                get_url($target.to_s +req.header["location"],'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
             end
         end
     end
@@ -430,7 +438,7 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
               puts $1
             end         
           when /(asp|aspx)/
-            if /(This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|strFileName=)/mi.match(body)
+            if /(This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|<h1>Server Error<\/h1>|strFileName=|<h2> <i>Invalid file name for monitoring: ')/mi.match(body)
               is_vuln = true
             end         
           when /(jsp|jspx)/
@@ -443,10 +451,15 @@ def get_url(url,method='get',data='',headers={},null_cookie=false, follow_redire
             end 
                     
       else            
-            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|strFileName=|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
+            if /((notice|warning|parse\serror|fatal\serror):|<b>(notice|warning|parse\serror|fatal\serror)<\/b>:|undefined\s(variable|constant|index|offset)|PHP\s(notice|warning|error)|\( ! \)<\/span> PropelException:|<b>Warning<\/b>:  f|Warning:  f|<b>Warning<\/b>:  m|Warning:  m|This error page might contain sensitive information because ASP.NET is configured to show verbose error messages using &lt;customErrors mode="Off"|[HttpException]: The file '|<span><H1>Server Error in '\/' Application.<hr width=100% size=1 color=silver><\/H1> |<span><H1>Server Error in '\/|An unknown error occured in this application.|This error was caught by <b>Application Handler<\/b>.<\/p>|Description: <\/font><\/b>An unhandled exception occurred|COMException \(0x80004005\)|The system cannot find the path specified|<h1>Server Error in|Server Error in \'\/\'|strFileName=|<h2> <i>Invalid file name for monitoring: '|<h1>Server Error<\/h1>|<b>exception<\/b> <pre>java.lang.IllegalArgumentException: setAttribute:|<pre>org\.apache\.jasper\.JasperException|<u>The server encountered an internal error \(\) that prevented it from fulfilling this request\.<\/u>|<h1>HTTP Status 500 - <\/h1>|at java\.lang\.Thread\.run|at javax\.servlet\.http\.HttpServlet|<PRE>Message Exception occurred in|<H1>500 Internal Server Error<\/H1>|Message Exception occurred|ArgumentException\:|<li>Enable Robust Exception Information to provide greater detail about the source of errors|File not found:|Error Occurred While Processing Request|<div class="Label">Diagnostic Information:<\/div>|The server encountered an internal error and was unable to complete |<cfif|<cfelse|<cfset|<cfquery|<CFLOCATION|<cfoutput|<cfcatch|<cftry|<cfdump|<cferror)/mi.match(body)
                 is_vuln = true
             end              
       end
+    
+      if /<b> Description: <\/b>An application error occurred on the server. The current custom error settings for this application prevent the details of/mi.match(body)
+            puts "[*] regex fails. target aspx application is found to enable custom error handler.\n"
+     end
+    
       if is_vuln == true
           msg = "[*] #{url}"
           log("#{msg}\n\n[html_source]\n#{body}[/html_source]\n\n")          
@@ -566,6 +579,9 @@ def ar2s(ar)
     return r
 end
 
+def is_dotnet1x(u)
+
+end
 
 def main
 
@@ -946,7 +962,7 @@ def main
             error_msg('-d source path directory/file does not exist. It can be either a path definition file or a source directory.')
         end
 
-
+        get_url(targeturl,'head')
         puts "\n# waiting for child threads to finish .."
         scans.each {|t|t.join;print  "."}
 
@@ -1003,6 +1019,7 @@ def main
                 end
                 
             else
+                
                 if server_root == ''                
                     sr = logcontent.to_s.scan(/([a-z]:\\\\([^<^\\\\]+)\\\\([^<^\\\\]+))/i)   
                     sr2 = logcontent.to_s.scan(/([a-z]:\\\\([^<^\\\\]+)\\\\([^<^\\\\]+)\\\\([^<^\\\\]+))/i)   
@@ -1010,6 +1027,9 @@ def main
                         if sr2[0][0].class.to_s == 'String'
                             server_root = sr2[0][0].to_s
                             server_root.gsub!('\\\\','\\') 
+                            if server_root =~ /File names for monitoring must/
+                                server_root.gsub!('~.aspx\'. File names for monitoring must have absolute paths, and no wildcards.','')
+                            end
                         end
                     elsif sr.size > 0
                         if sr[0][0].class.to_s == 'String'

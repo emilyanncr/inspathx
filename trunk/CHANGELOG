@@ -1,3 +1,10 @@
+2011-03
+----------------
+
+Added dotnet 1.x ASPX Full Path Disclosure (tilde character  /~.aspx) - Thanks to Ryan Dewhurst
+Added dotnet xx ASPX Full Path Disclosure from Nikto (\ character /a\.aspx)
+
+
 2011-02
 ----------------
 
