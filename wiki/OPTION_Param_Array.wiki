@@ -1,9 +1,7 @@
 #labels option_param_array
-
-
 == Option: Param_Array demo ==
 
-Specify the number of [] with -p option. 
+Specify the number of `[]` with -p option. 
 
 
 
