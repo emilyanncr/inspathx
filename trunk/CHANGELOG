@@ -1,8 +1,15 @@
 2011-03
 ----------------
 
+Refined param array that supports any number of dimensions with -p option (i.e -p 1, -p 2, -p 3) - Thanks to Brendan Coles 
+
 Added dotnet 1.x ASPX Full Path Disclosure (tilde character  /~.aspx) - Thanks to Ryan Dewhurst
+
 Added dotnet xx ASPX Full Path Disclosure from Nikto (\ character /a\.aspx)
+
+Added --xp as alias --x-p
+
+[2011-03-23] stats => path definitions - 342 , path vuln definitions - 140
 
 
 2011-02
