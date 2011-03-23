@@ -27,11 +27,15 @@ Usage: inspathx [options]
 	-s, --search STRING              search path definition files in paths/ & paths_vuln/ directories.
 
 Example:
-ruby inspathx.rb -d /sources/phpmyadmin -u http://localhost/phpmyadmin
-ruby inspathx.rb -d c:/sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php
-ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx -n
+ruby inspathx.rb -u http://localhost/wordpress 
+ruby inspathx.rb -u http://localhost/wordpress -p 1
+ruby inspathx.rb -d /sources/wordpress -u http://localhost/wordpress
 ruby inspathx.rb -d /sources/wordpress -g paths/wordpress-3.0.4
-ruby inspathx.rb -d paths/wordpress-3.0.4 -u http://localhost/wp
+ruby inspathx.rb -d paths/wordpress-3.0.4 -u http://localhost/wordpress
+ruby inspathx.rb -d c:/sources/wordpress -u http://localhost/wordpress -t 20 -l php
+ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx -n
+
+
 
 
 EXAMPLES

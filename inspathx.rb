@@ -6,7 +6,7 @@
 #    license: GPL 
 #    released date: 2010-09-28
 #     
-#    last updated: 2011-02-24
+#    last updated: 2011-03-23
 #
 #    (c) Aung Khant, http://yehg.net               
 #                                                 
@@ -35,7 +35,7 @@
 #    The inspath takes
 #    Required:
 #
-#    -d with source directory (of application like /src/webapp/phpmyadmin)
+#    -d with source directory (of application like /src/webapp/joomla)
 #    -u with the target base URL (like http://localhost) Avoid specifying file name like http://localhost/index.php
 #
 #    Optional:
@@ -234,9 +234,10 @@ def prepare_cookies(sa)
     return cookies
 end
 
-def get_params(url,data,headers)
+def get_params(param_num,url,data,headers)
     params = []
     links = []
+    param_num = 1 if param_num == '' or param_num == 0
     uri = URI.parse(url)
     uri.path += '/' if uri.path.size == 0
     http = Net::HTTP.new(uri.host,uri.port)
@@ -299,12 +300,12 @@ def get_params(url,data,headers)
     params.compact!
     str = ''
     if params.class.to_s == 'Array'
-        params.map!{ |s| s + '[]='}
+        pnum = '[]'*param_num
+        params.map!{ |s| s + pnum + '='}
         params.each do |v|
             str = str + v + '&'
         end
     end   
-    
     return str
 end
 
@@ -495,11 +496,18 @@ end
 def print_help(s,p=$0)
   print_banner
   puts s  
-  puts "\nExample:\nruby #{p} -d /sources/phpmyadmin -u http://localhost/phpmyadmin\n"
-  puts "ruby #{p} -d c:/sources/phpmyadmin -u http://localhost/phpmyadmin -t 20 -l php"
-  puts "ruby #{p} -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx -n"
-  puts "ruby #{p} -d /sources/wordpress -g paths/wordpress-3.0.4"
-  puts "ruby #{p} -d paths/wordpress-3.0.4 -u http://localhost/wp"
+  puts <<EOL
+
+Example:
+ruby inspathx.rb -u http://localhost/wordpress 
+ruby inspathx.rb -u http://localhost/wordpress -p 1
+ruby inspathx.rb -d /sources/wordpress -u http://localhost/wordpress
+ruby inspathx.rb -d /sources/wordpress -g paths/wordpress-3.0.4
+ruby inspathx.rb -d paths/wordpress-3.0.4 -u http://localhost/wordpress
+ruby inspathx.rb -d c:/sources/wordpress -u http://localhost/wordpress -t 20 -l php
+ruby inspathx.rb -d /sources/jspnuke -u http://localhost/jspnuke -t 20 -l jsp -x jsp,jspx -n
+
+EOL
   exit!
 end
 
@@ -598,7 +606,7 @@ def main
             end
 
             options[:url] = nil
-            opts.on('-u','--url http://site.com/','set url [Required if -g option is not specified]') do |url|
+            opts.on('-u','--url http://site.com/','set url') do |url|
                 options[:url] = url
             end
 
@@ -643,8 +651,10 @@ def main
             end  
               
             options[:param_array] = false
-            opts.on('-p','--param-array','identify parameters in target url,make \'em array & request (--data value untouched)')  do |pa|
-                options[:param_array] = true
+            opts.on('-p','--param-array NUM','identify parameters in target url,make \'em array (value: 1 for [], 2 for [][], 3 for [][][], n .... []*n)  <note: --data value untouched>')  do |pa|
+                pa = pa.to_i;
+                pa = 1 if pa == 0 
+                options[:param_array] = pa
             end  
 
             options[:regexp] = ''
@@ -671,6 +681,10 @@ def main
             opts.on('--x-p','show only paths in console and write them to file with path_vuln.txt surfix. This does not contain target url portion.')  do |xv|
                 options[:pval] = true
             end  
+            
+            opts.on('--xp','alias to --x-p')  do |xv|
+                options[:pval] = true
+            end 
             
             options[:search] = ''
             opts.on('-s','--search STRING','search path definition files in paths/ & paths_vuln/ directories.')   do |se|    
@@ -813,11 +827,11 @@ def main
         headers = parse_header(options[:headers].to_s)
         headers = headers.merge($useragent)
 
-        if options[:param_array] == true  
+        if options[:param_array] != false
             if data == ''
-                data = get_params(targeturl,data,headers)
+                data = get_params(options[:param_array],targeturl,data,headers)
             else
-                data = data +  get_params(targeturl,data,headers)
+                data = data +  get_params(options[:param_array],targeturl,data,headers)
             end
         end
 
@@ -857,13 +871,13 @@ def main
         else 
             puts "\n# target: #{targeturl}" 
         end
-        puts "# source: #{sourcepath}\n# log file: #{$logpath}\n# follow redirect: #{follow_redirect}\n# null cookie: #{null_cookie}\n# total threads: #{maxthread}\n# time: #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n"    
+        puts "# source: #{sourcepath}\n# log file: #{$logpath}\n# follow redirect: #{follow_redirect}\n# null cookie: #{null_cookie}\n# param array: #{options[:param_array]}\n# total threads: #{maxthread}\n# time: #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n"    
 
          
         log("TargetURL: #{targeturl}")
         log("Source: #{sourcepath}")
-        log("Settings: follow redirect: #{follow_redirect},null cookie: #{null_cookie}, total threads: #{maxthread}")
-        log("Date:  #{Time.now.strftime("%H:%M:%S %m-%d-%Y")}\n\n")
+        log("Settings: follow redirect: #{follow_redirect},null cookie: #{null_cookie}, param array: #{options[:param_array]}, total threads: #{maxthread}")
+        log("Date:  #{Time.now.strftime("%Y-%m-%d %H:%M:%S")}\n\n")
 
 
         if null_cookie == true
