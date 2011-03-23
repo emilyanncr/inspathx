@@ -49,7 +49,7 @@ Send bugs, suggestions, contributions to inspathx[at]yehg.net
 *Check on server with error-display OFF*
 
 {{{
-ruby inspathx.rb -u http://10.10.233.22/
+$ ruby inspathx.rb -u http://10.10.233.22/
 
 =============================================================
 Path Discloser (a.k.a inspathx) / Error Hunter
