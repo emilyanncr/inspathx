@@ -1,5 +1,5 @@
 #labels option_param_array
-# demo for -p, --param option 
+
 
 == Option: Param_Array demo ==
 
