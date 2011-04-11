@@ -23,4 +23,7 @@ Method: 2 - Using error_reporting(0);
    
    A constant, APP_ERR_LEVEL, must have defined in config file. 
   
+   Or unless the application is being run in localhost, error_reporting will be disabled:
+   
+   ($_SERVER['HTTP_HOST']=='localhost')?error_reporting(E_ALL):error_report(0);
 
