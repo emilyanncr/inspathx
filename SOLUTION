@@ -25,7 +25,5 @@ Method: 2 - Using error_reporting(0);
   
    Or unless the application is being run in localhost, error_reporting will be disabled:
    
-   [CODE]
-   ($_SERVER['HTTP_HOST']=='localhost')?error_reporting(E_ALL):error_report(0);
-   [/CODE]
+   ($_SERVER['HTTP_HOST']=='localhost')?error_reporting(E_ALL):error_reporting(0);
 
