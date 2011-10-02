@@ -1,3 +1,5 @@
+Patrick Monnerat for his contribution, Client-side SSL certificate support
+
 Ryan Dewhurst (http://www.ethicalhack3r.co.uk) for his suggestion to cover all checks (empty array, null cookie) of http://www.owasp.org/index.php/Full_Path_Disclosure
  --data, --param-array, -n/--null-session options.
 
