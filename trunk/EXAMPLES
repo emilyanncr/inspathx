@@ -11,6 +11,7 @@ svn co http://inspathx.googlecode.com/svn/trunk/ inspathx
 Usage: inspathx [options]
     -d, --dir /source/app            set source code directory/source path definition file of application 
     -u, --url http://site.com/       set url [Required if -g option is not specified]
+    -k, --keycert <pemfile>          client key + cert PEM file	
     -t, --threads 10                 set thread number(default: 10)
     -l, --language php               set language [php,asp,aspx,jsp,jspx,cfm,all] (default all - means scan all)
     -x, --extension php              set file extensions (php4,php5,...)  default regex: php4,php5,php6,php,asp,aspx,jsp,jspx,cfm

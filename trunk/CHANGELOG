@@ -1,3 +1,9 @@
+
+2011-10
+----------------
+Added client SSL certificate support. This will enable you to run inspathx against web application that requires client-side SSL certificate for authorized access.
+
+
 2011-03
 ----------------
 

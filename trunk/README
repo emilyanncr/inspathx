@@ -2,7 +2,7 @@ Internal Path Discloser / Error Hunter
   
 license: GPL 
 released date: 2010-09-28
-last update: 2011-01-26
+last update: 2011-10-02
 
 (c) Aung Khant, http://yehg.net               
                                              
@@ -34,6 +34,7 @@ Optional
 	-t with the number of threads concurrently to run (default is 10)
 	-l with the language [one of php,asp,aspx,jsp,cfm,all] (default is all)
 	-x with your desired extensions separated by comma(s) (default : php4,php5,php6,php,asp,aspx,jsp,jspx,cfm)
+    -k, --keycert <pemfile>          client key + cert PEM file	
 	-m/--method with http method (either get or post)
 	-q/--data with http data ("a=1&b=2")	
 	-h/--headers with http headers (format: "x-ping-back: %00\r\ncookie: %00)
