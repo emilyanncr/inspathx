@@ -6,7 +6,7 @@
 #    license: GPL 
 #    released date: 2010-09-28
 #     
-#    last updated: 2011-03-23
+#    last updated: 2012-01-26
 #
 #    (c) Aung Khant, http://yehg.net               
 #                                                 
@@ -434,7 +434,7 @@ def get_url(url,key='',cert='',method='get',data='',headers={},null_cookie=false
             if req.header["location"] =~ /^http/i
                 get_url(req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
             else    
-                get_url($target.to_s +req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
+                get_url($target.to_s + req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
             end
         end
     end
