@@ -433,8 +433,14 @@ def get_url(url,key='',cert='',method='get',data='',headers={},null_cookie=false
             puts "-> #{url} | #{req.code.to_s}\n(Redirected to : " + req.header["location"]  + ")\n\n"
             if req.header["location"] =~ /^http/i
                 get_url(req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
-            else    
-                get_url($target.to_s + req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
+            else 
+                newurl = uri.scheme + "://" + uri.host
+                newurl += ":" + uri.port.to_s if uri.port != nil
+                if req.header["location"] !~ /^\//
+                    newurl += uri.path.to_s.sub(/[^\/]*$/, "") + "/"
+                end
+                get_url(newurl + req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
+                #get_url($target.to_s + req.header["location"],key,cert,'get',data='',headers={},null_cookie=false, follow_redirect=false,regexp='')
             end
         end
     end
